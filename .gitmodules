@@ -1,0 +1,3 @@
+[submodule "proxygen"]
+	path = proxygen
+	url = git@github.com:facebook/proxygen
