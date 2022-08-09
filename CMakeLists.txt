@@ -58,5 +58,6 @@ PUBLIC
     zstd
     double-conversion
 
+    boost_context
 )
 

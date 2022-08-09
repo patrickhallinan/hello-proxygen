@@ -14,8 +14,6 @@ int main(int argc, char *argv[]) {
 
     folly::Init init(&argc, &argv); // calls google::InitGoogleLogging()
 
-    LOG(INFO) << folly::join(" ", std::vector<std::string>{"Hello", "Proxygen"});
-
     return run();
 }
 
