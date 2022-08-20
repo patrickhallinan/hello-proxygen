@@ -1,4 +1,6 @@
 # README
+  
+Tested on ubuntu 20.04
 
 ## get repo
 ```
