@@ -1,0 +1,31 @@
+= notes
+
+== building proxygen on rocky linux 9
+
+=== install dependencies
+
+==== dnf
+
+----
+sudo dnf install -y epel-release
+sudo dnf update -y
+sudo dnf config-manager --set-enabled crb
+sudo dnf install -y cmake gcc gcc-c++ boost boost-devel double-conversion-devel
+sudo dnf install -y fast_float-devel libevent-devel openssl-devel glog-devel zlib-devel libsodium-devel gperf
+sudo dnf install libunwind-devel binutils-devel fmt-devel xz-devel lz4-devel snappy-devel libzstd-devel
+----
+
+
+==== fmt library version 11
+
+----
+git clone https://github.com/fmtlib/fmt.git
+
+cd fmt
+git checkout 11.0.2
+mkdir build
+cd build
+cmake ..
+cmake --build .
+sudo cmake --install .
+---- 
