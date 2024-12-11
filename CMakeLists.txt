@@ -42,6 +42,7 @@ PUBLIC
     unwind
     sodium
 
+    bz2
     dl
     event
     iberty
