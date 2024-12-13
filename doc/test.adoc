@@ -1,0 +1,29 @@
+= 
+
+== example
+
+[source, c++]
+----
+test_suite("foo", [](TestSuite& suite) {
+    
+    setup([](Test& t) {
+    }
+    
+    before([](Test& t) {
+    }
+    
+    after([](Test& t) {
+    }
+    
+    test("config crud", [](Test& t) {
+        t.step("create", [&]() {
+        })
+        .step("read", [&]() {
+        })
+        .step("update", [&]() {
+        })
+        .step("delete", [&]() {
+        });
+    }
+}
+----

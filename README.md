@@ -26,3 +26,13 @@ mkdir build && cd build && cmake ..
 ```
 make
 ```
+
+## test with curl
+
+```
+curl http://localhost:8080
+```
+
+```
+curl -X POST -D "nacho" http://localhost:8080
+```
