@@ -1,9 +1,23 @@
+ifeval::["{docdir}" == ""]
+:imagesdir: image
+endif::[]
+
+
 = proxygen curl sample: GET request
 
 A little documentation to show how proxygen's curl HTTP client works.
 
 
 == init
+
+// github
+ifeval::["{docdir}" == ""]
+image::curl-init_puml.png[]
+endif::[]
+
+
+// eclipse asciidoc plugin
+ifeval::["{docdir}" != ""]
 
 [plantuml, "curl-init.puml", svg]
 ----
@@ -15,6 +29,7 @@ participant "**EventBase**" as EventBase
 participant "**URL**" as URL
 participant "**CurlClient**" as CurlClient
 participant "**SocketAddress**" as SocketAddress
+
 
 == setup ==
 
@@ -28,8 +43,21 @@ main -> CurlClient : setHeadersLogging(FLAGS_log_response=true)
 main -> SocketAddress : addr=ctor{ host, port, allowNameLookup=true }
 ----
 
+endif::[]
+
 
 == http get
+
+
+// for github
+ifeval::["{docdir}" == ""]
+image::http-get_puml.png[]
+endif::[]
+
+
+// for eclipse asciidoc plugin
+ifeval::["{docdir}" != ""]
+
 
 [plantuml, "http-get.puml", svg]
 ----
@@ -45,7 +73,6 @@ participant "**HTTPTransaction**" as HTTPTransaction
 
 main -> HTTPConnector : connector=ctor{ &curlClient, WheelTimer{ request_timeout, &eb } }
 main -> HTTPConnector : connect( &eb, addr, connect_timeout, socket_options )
-main -> HTTPConnector :  connect()
 main -> EventBase : loop()
 note right
   This is the event loop. All events are run in this thread
@@ -91,8 +118,20 @@ end note
 HTTPTransaction -> CurlClient : detachTransaction()
 ----
 
+endif::[]
+
 
 == classes
+
+// for github
+ifeval::["{docdir}" == ""]
+image::classes_puml.png[]
+endif::[]
+
+
+// for eclipse asciidoc plugin
+ifeval::["{docdir}" != ""]
+
 
 [plantuml, "classes.puml", svg]
 ----
@@ -186,10 +225,12 @@ class HTTPTransactionHandler {
 }
 ----
 
+endif::[]
+
 
 == some headers
 
-proxygen/lib/http/HTTPMethod.h
+proxygen/lib/http/HTTPMethod.h +
  * HTTPMethod::GET, HTTPMethod::POST
 
 folly/SocketAddress.h
