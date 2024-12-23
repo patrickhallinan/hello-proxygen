@@ -25,6 +25,7 @@ DECLARE_int32(recv_window);
 
 
 HttpClient::HttpClient(EventBase* eb,
+                       WheelTimerInstance timer,
                        const std::string& url,
                        const HTTPHeaders& headers)
     : eb_{eb}
@@ -34,32 +35,33 @@ HttpClient::HttpClient(EventBase* eb,
         request_.getHeaders().add(header, val);
     });
 
-    // Scheduled events and timeout callbacks are registered with the timer.  If an event
-    // occurs before a timeout then the timeout callback is removed from the timer. There
-    // can be no race condition since timeout events and all other events are serviced
-    // from the same thread.
-    //
-    // There can be only one!  This is a big object.
-    eventTimer_ = folly::HHWheelTimer::newTimer(
-        eb_,
-        std::chrono::milliseconds(folly::HHWheelTimer::DEFAULT_TICK_INTERVAL),
-        folly::AsyncTimeout::InternalEnum::NORMAL,
-        std::chrono::milliseconds(5000));
+    //auto defaultTimeout = std::chrono::milliseconds(5000);
 
-    httpConnector_ = std::make_unique<proxygen::HTTPConnector>(this, eventTimer_.get());
+    // Scheduled events and timeout callbacks are registered with the timer.
+    // If an event occurs before a timeout then the timeout callback is removed
+    // from the timer. There cannot be a race condition since timeout events
+    // and all other events are serviced from the same thread.
+    //
+    // This is a big object.
+    //auto timer = WheelTimerInstance{defaultTimeout, eb};
+
+    httpConnector_ =
+        std::make_unique<proxygen::HTTPConnector>(this, timer);
+                                                  //WheelTimerInstance{timeout, eb});
 }
 
 
-folly::Future<HttpResponse> HttpClient::post(const std::string& content) {
+folly::Future<HttpResponse> HttpClient::POST(const std::string& content) {
     requestBody_ = content;
-    httpMethod_ = *proxygen::stringToMethod("POST");
+    //httpMethod_ = *proxygen::stringToMethod("POST");
+    httpMethod_ = proxygen::HTTPMethod::POST;
 
     folly::SocketAddress socketAddress{url_.getHost(), url_.getPort(), /*allowNameLookup*/true};
 
-    // For some reason the connect methods takes a const ref
+    // intentionally static const
     static const folly::SocketOptionMap socketOptions{{{SOL_SOCKET, SO_REUSEADDR}, 1}};
 
-    httpConnector_->reset();
+    //httpConnector_->reset();
     httpConnector_->connect(eb_, socketAddress, std::chrono::milliseconds(500), socketOptions);
 
     promise_.reset(new folly::Promise<HttpResponse>{});

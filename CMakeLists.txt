@@ -2,10 +2,11 @@ cmake_minimum_required(VERSION 3.16)
 
 project (HelloProxygen)
 
-# stop compilation on first error
-set(GCC_COMPILE_FLAGS "-Wfatal-errors")
+set(GCC_COMPILE_FLAGS "-Wfatal-errors -g")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_COMPILE_FLAGS}")
 
+set(CMAKE_CXX_COMPILER "clang++")
+set(CMAKE_C_COMPILER "clang")
 
 set(CMAKE_PREFIX_PATH
     "proxygen/proxygen/_build/"

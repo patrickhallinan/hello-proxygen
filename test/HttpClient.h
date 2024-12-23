@@ -8,6 +8,8 @@
 #include <proxygen/lib/http/HTTPConnector.h>
 #include <proxygen/lib/utils/URL.h>
 
+#include <proxygen/lib/utils/WheelTimerInstance.h>
+
 
 class HttpResponse {
     uint16_t status_;
@@ -27,21 +29,26 @@ public:
     }
 };
 
+
+// TODO: make a simple HttpClient
+// move to .cpp
 class HttpClient : public proxygen::HTTPConnector::Callback {
     friend class TransactionHandler;
 
 public:
     HttpClient(folly::EventBase*,
+               proxygen::WheelTimerInstance,
                const std::string& url,
                const proxygen::HTTPHeaders&);
 
     virtual ~HttpClient() = default;
 
-    folly::Future<HttpResponse> post(const std::string& content);
+    folly::Future<HttpResponse> POST(const std::string& content);
 
     static proxygen::HTTPHeaders parseHeaders(const std::string& headersString);
 
     // initial SSL related structures
+    // rely on gflags
     void initializeSsl(const std::string& caPath,
                        const std::string& nextProtos,
                        const std::string& certPath = "",
@@ -78,14 +85,14 @@ protected:
 
     folly::SSLContextPtr sslContext_;
 
-    int32_t recvWindow_{0};
+    int32_t recvWindow_{65536};
     bool egressPaused_{false};
 
     std::string requestBody_;
 
     std::unique_ptr<folly::IOBuf> inputBuf_;
 
-    folly::HHWheelTimer::UniquePtr eventTimer_;
+    //folly::HHWheelTimer::UniquePtr eventTimer_;
     std::unique_ptr<proxygen::HTTPConnector> httpConnector_;
 
     std::unique_ptr<folly::Promise<HttpResponse>> promise_;

@@ -7,7 +7,8 @@ class TransactionHandler : public proxygen::HTTPTransactionHandler {
 
     class HttpClient* httpClient_;
 
-    // XXX: What to do with this???
+    // This is assigned in the beginning of a transaction with setTransaction()
+    // and it is good until detachTransaction()
     proxygen::HTTPTransaction* txn_{nullptr};
 
     std::unique_ptr<proxygen::HTTPMessage> response_;
