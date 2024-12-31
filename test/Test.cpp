@@ -16,6 +16,7 @@ proxygen::HTTPHeaders httpHeaders();
 
 
 Test::Test(folly::EventBase& eventBase, proxygen::WheelTimerInstance& timer) {
+    //eventBase.runInEventBaseThreadAndWait([&]() {
     eventBase.runInEventBaseThread([&]() {
         std::cout << "runInEventBaseThreadAndWait()\n";
 
@@ -35,7 +36,7 @@ Test::Test(folly::EventBase& eventBase, proxygen::WheelTimerInstance& timer) {
 proxygen::HTTPHeaders httpHeaders() {
     proxygen::HTTPHeaders headers;
 
-    auto host = fmt::format("{}:{}", FLAGS_hello_host, FLAGS_hello_host);
+    auto host = fmt::format("{}:{}", FLAGS_hello_host, FLAGS_hello_port);
     headers.add(proxygen::HTTP_HEADER_HOST, host);
     headers.add(proxygen::HTTP_HEADER_USER_AGENT, "test-client");
     headers.add(proxygen::HTTP_HEADER_ACCEPT, "*/*");

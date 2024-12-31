@@ -32,10 +32,20 @@ int main(int argc, char* argv[]) {
     auto defaultTimeout = std::chrono::milliseconds(5000);
     proxygen::WheelTimerInstance timer{defaultTimeout, &eventBase};
 
+    auto eventThread = std::thread([&eventBase](){
+        LOG(INFO) << "HTTP Client Event Handler thread started";
+        eventBase.loop();
+        //eventBase.loopForever();
+    });
+
     //eventBase->runInEventBaseThreadAndWait([&]() {
+
     Test test(eventBase, timer);
 
-    eventBase.loopForever();
+    eventThread.join();
+
+    //
+    //eventBase.loopForever();
 
     /*
     auto eventThread = std::thread([eventBase=eventBase.get()](){
@@ -43,7 +53,7 @@ int main(int argc, char* argv[]) {
         eventBase->loopForever();
     });
     eventThread.detach();
-    //eventThread.join();
+    eventThread.join();
     */
 
     std::cout << "Exit main()\n";

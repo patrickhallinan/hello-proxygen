@@ -18,6 +18,8 @@ class Test {
 public:
     Test(folly::EventBase& eventBase, proxygen::WheelTimerInstance& timer);
 
+    void run();
+
 private:
     std::unique_ptr<HttpClient> httpClient_;
 };

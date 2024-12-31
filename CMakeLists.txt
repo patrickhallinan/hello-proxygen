@@ -12,6 +12,9 @@ set(CMAKE_PREFIX_PATH
     "proxygen/proxygen/_build/"
 )
 
+# Suppress warnings for headers included
+# add_compile_options(-isystem /usr/include/openssl)
+include_directories(SYSTEM proxygen/proxygen/_build/deps/include)
 
 include_directories(
 PUBLIC
