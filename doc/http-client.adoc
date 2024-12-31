@@ -1,0 +1,41 @@
+= http-client
+
+== uml
+
+=== startup
+
+[plantuml, "init-seq.puml", svg]
+----
+hide footbox
+
+participant "**main()**\n\n" as main
+participant "**folly::Init**\n\n" as Init
+participant "**EventBase**\n\n" as EventBase
+participant "**WheelTimerInstance**\n\n" as WheelTimerInstance
+participant "**std::thread**\n\n" as thread
+participant "**Test**\n\n" as Test
+
+
+main -> Init : ctor{ &argc, &argv }
+main -> EventBase : eb=ctor{}
+
+main -> WheelTimerInstance : timer=ctor{ defaultTimeout, eb }
+note right #ff8888
+   must create before
+   starting event loop
+end note 
+
+main -> thread : ctor{ run_event_loop( &eb ) }
+main -> Test : test=ctor{}
+
+Test -> HttpClient : ctor{}
+
+main -> Test : run()
+note left #ff0000: todo
+
+main -> thread : join()
+
+
+
+----
+

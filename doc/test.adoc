@@ -1,29 +1,333 @@
-= 
+= test
 
-== example
+ifeval::["{docdir}" == ""]
+:imagesdir: image
+endif::[]
+
+
+= proxygen curl sample: GET request
+
+A little documentation to show how proxygen's curl HTTP client works.
+
+
+== init
+
+// github
+ifeval::["{docdir}" == ""]
+image::curl-init_puml.png[]
+endif::[]
+
+
+// eclipse asciidoc plugin
+ifeval::["{docdir}" != ""]
+
+[plantuml, "curl-init.puml", svg]
+----
+hide footbox
+
+participant "**main()**" as main
+participant "**folly::Init**" as Init
+participant "**EventBase**" as EventBase
+participant "**Test.h**" as test_h
+participant "**Test.cpp**" as test_cpp
+participant "**HttpClient**" as HttpClient
+participant "**Future**" as Future
+participant "**WheelTimerInstance**" as WheelTimerInstance
+'participant "**SocketAddress**" as SocketAddress
+
+'participant "**URL**" as URL
+
+== setup ==
+
+main -> Init : ctor{ &argc, &argv }
+main -> EventBase : eb=ctor{}
+main -> WheelTimerInstance : timer=ctor{ default_timeout }
+main -> test_h : test(eb, timer)
+test_h -> EventBase : runInEventBaseThread( callback )
+main -> EventBase : loopForever()
+
+group callback
+    EventBase -> test_cpp : callback()
+    
+    group HttpClient ctor
+        test_cpp -> HttpClient : ctor{ EventBase, url, headers }
+        HttpClient -> WheelTimerInstance : timer=ctor{ timeout_ms }
+        HttpClient -> HttpConnector : ctor{ this, timer }        
+    end group
+
+    group HttpClient.POST()
+        test_cpp -> HttpClient : POST("nacho")
+        HttpClient -> SocketAddress : addr=ctor{}
+        
+        HttpClient -> SocketOptionMap : options=ctor{}
+        note left: static initialization
+        
+        HttpClient -> HttpConnector : connect( eb_, socketAddress, std::chrono::milliseconds(500), options )
+    end group
+    
+    HttpClient --> test_cpp : future
+    test_cpp -> Future : thenValue( response_handler(HttpResponse&&) )
+    test_cpp --> EventBase : future
+end group
+
+'main -> HttpClient : ctor{ eb, HTTPMethod::GET, proxy=nullptr, headers, input_filename, h2c=true )
+'main -> SocketAddress : addr=ctor{ host, port, allowNameLookup=true }
+----
+
+endif::[]
+
+== http client connect
+
+// github
+ifeval::["{docdir}" == ""]
+image::http-client-connect_puml.png[]
+endif::[]
+
+
+// eclipse asciidoc plugin
+ifeval::["{docdir}" != ""]
+
+[plantuml, "http-client-connect.puml", svg]
+----
+hide footbox
+
+participant "**EventBase**" as EventBase
+participant "**Test.cpp**" as test_cpp
+participant "**HttpClient**" as HttpClient
+participant "**HttpConnector**" as HttpConnector
+participant "**Future**" as Future
+participant "**SocketAddress**" as SocketAddress
+participant "**SocketOptionMap**" as SocketOptionMap
+
+'participant "**URL**" as URL
+
+group callback
+    EventBase -> test_cpp : callback()
+    
+    group HttpClient ctor
+        test_cpp -> HttpClient : ctor{ EventBase, url, headers }
+        HttpClient -> HttpConnector : ctor{ this, timer }        
+    end group
+
+    group HttpClient.POST()
+        test_cpp -> HttpClient : POST("nacho")
+        HttpClient -> SocketAddress : addr=ctor{}
+        
+        HttpClient -> SocketOptionMap : options=ctor{}
+        note left: static initialization
+        
+        HttpClient -> HttpConnector : connect( eb_, socketAddress, timeout, options )
+    end group
+    
+    HttpClient --> test_cpp : future
+    test_cpp -> Future : thenValue( response_handler(HttpResponse&&) )
+    test_cpp --> EventBase : future
+end group
+
+'main -> HttpClient : ctor{ eb, HTTPMethod::GET, proxy=nullptr, headers, input_filename, h2c=true )
+'main -> SocketAddress : addr=ctor{ host, port, allowNameLookup=true }
+----
+
+endif::[]
+
+
+== http get
+
+
+// for github
+ifeval::["{docdir}" == ""]
+image::http-get_puml.png[]
+endif::[]
+
+
+// for eclipse asciidoc plugin
+ifeval::["{docdir}" != ""]
+
+
+[plantuml, "http-get.puml", svg]
+----
+
+participant "**main()**" as main
+participant "**HttpClient**" as HttpClient
+participant "**EventBase**" as EventBase
+participant "**AsyncSocket**" as AsyncSocket
+participant "**HTTPConnector**" as HTTPConnector
+participant "**HTTPUpstreamSession**" as HTTPUpstreamSession
+participant "**HTTPTransaction**" as HTTPTransaction
+
+
+main -> HTTPConnector : connector=ctor{ &HttpClient, WheelTimer{ request_timeout, &eb } }
+main -> HTTPConnector : connect( &eb, addr, connect_timeout, socket_options )
+main -> EventBase : loop()
+note right
+  This is the event loop. All events are run in this thread
+end note
+
+HTTPConnector -> AsyncSocket : sock=ctor{ eventBase }
+HTTPConnector -> HttpClient : preConnect( sock )
+HTTPConnector -> AsyncSocket : connect(this, ... )
+AsyncSocket -> HTTPConnector : preConnect( NetworkSocket )
+
+== sends request on connect success event ==
+
+AsyncSocket -> HTTPConnector : connectSuccess()
+HTTPConnector -> HttpClient : connectSuccess( HTTPUpstreamSession session )
+
+HttpClient -> HTTPUpstreamSession : setFlowControl( **...** )
+HttpClient -> HTTPUpstreamSession : txn=newTransaction( this )
+HttpClient <- HttpClient : sendRequest( txn )
+
+group send request
+    HttpClient -> HttpClient : setupHeaders()
+    HttpClient -> HTTPTransaction : sendHeaders( /*proxygen::HTTPMessage*/ request_ )
+    HttpClient -> HTTPTransaction : sendEOM() // end of message
+end group
+
+HttpClient -> HTTPUpstreamSession : closeWhenIdle()
+
+== response events ==
+
+HTTPTransaction -> HttpClient : onHeadersComplete( unique_ptr<proxygen::HTTPMessage> )
+
+HTTPTransaction -> HttpClient : onBody( unique_ptr<folly::IOBuf> )
+note left
+    called repeatedly until
+    message is complete
+end note
+
+HTTPTransaction -> HttpClient : onEOM()
+note across
+    **NOTE:** HttpClient::onError() can be called between HttpClient::onEOM() and HttpClient::detachTransaction()
+end note
+
+HTTPTransaction -> HttpClient : detachTransaction()
+----
+
+endif::[]
+
+
+== classes
+
+// for github
+ifeval::["{docdir}" == ""]
+image::classes_puml.png[]
+endif::[]
+
+
+// for eclipse asciidoc plugin
+ifeval::["{docdir}" != ""]
+
+
+[plantuml, "classes.puml", svg]
+----
+
+
+
+class "**AsyncSocket**" as AsyncSocket
+
+class "**AsyncSocketTransport**\n\nfolly/io/async/AsyncSocketTransport.h" as AsyncSocketTransport
+
+abstract "**ConnectCallback**\n\nfolly/io/async/AsyncSocketTransport.h*" as ConnectCallback
+
+class "**EventBase**" as EventBase
+class "**HTTPConnector**\n\nhttp/HTTPConnector.h" as HTTPConnector
+class "**Callback**\n\nhttp/HTTPConnector.h" as Callback
+class "**HTTPTransactionHandler**\n\nhttp/session/HTTPTransaction.h" as HTTPTransactionHandler
+class "**HttpClient**" as HttpClient
+
+AsyncSocketTransport <-- AsyncSocket
+
+ConnectCallback <- HTTPConnector
+
+Callback <-- HttpClient
+HTTPTransactionHandler <-- HttpClient
+
+TraceEventObserver <-- HTTPTransactionHandler
+
+AsyncSocketTransport +-- ConnectCallback
+HTTPConnector +-- Callback
+
+HTTPConnector o-- EventBase
+HTTPConnector o-- HttpClient
+HTTPConnector o-- AsyncSocket
+
+class EventBase {
+    loop()
+    loopForever()
+}
+
+class HTTPConnector {
+    connect()
+    ----
+    {abstract} connectSuccess()
+    {abstract} connectErr(AsyncSocketException)
+    {abstract} preConnect(NetworkSocket /*fd*/)
+
+    ----
+    Callback* HttpClient
+    folly::AsyncTransport::UniquePtr socket_;
+    'wangle::TransportInfo transportInfo_;
+}
+
+class AsyncSocket {
+    ctor( EventBase )
+    connect( ConnectCallback, SocketAddress, int timeout)
+}
+
+class HttpClient {
+    {abstract} connectSuccess()
+    {abstract} connectErr( AsyncSocketException )
+    {abstract} preConnect( NetworkSocket )
+
+    {abstract} void setTransaction( HTTPTransaction )
+    {abstract}  void detachTransaction()
+    {abstract}  void onHeadersComplete( unique_ptr<HTTPMessage> )
+    {abstract}  void onBody( unique_ptr<folly::IOBuf> )
+}
+
+class ConnectCallback {
+    {abstract} connectSuccess() = 0
+    {abstract} connectErr( AsyncSocketException ) = 0
+    {abstract} preConnect( NetworkSocket /*fd*/ )
+}
+
+class Callback {
+    {abstract} connectSuccess( HTTPUpstreamSession ) = 0
+    {abstract} connectError( folly::AsyncSocketException ) = 0
+    {abstract} preConnect( folly::AsyncTransport* )
+}
+
+class HTTPTransactionHandler {
+    {abstract} void setTransaction( HTTPTransaction* txn )
+
+    {abstract}  void detachTransaction() // transaction no longer valid
+
+    {abstract} void onHeadersComplete( unique_ptr<HTTPMessage> )
+    {abstract} void onBody( unique_ptr<folly::IOBuf> chain )
+    {abstract} void onEOM()
+
+    {abstract} void onError( HTTPException )
+}
+----
+
+endif::[]
+
+
+== useful functions
 
 [source, c++]
 ----
-test_suite("foo", [](TestSuite& suite) {
-    
-    setup([](Test& t) {
-    }
-    
-    before([](Test& t) {
-    }
-    
-    after([](Test& t) {
-    }
-    
-    test("config crud", [](Test& t) {
-        t.step("create", [&]() {
-        })
-        .step("read", [&]() {
-        })
-        .step("update", [&]() {
-        })
-        .step("delete", [&]() {
-        });
-    }
-}
+folly::EventBaseManager::get()->getEventBase(); 
 ----
+
+
+== some useful headers
+
+folly/SocketAddress.h
+proxygen/lib/http/HTTPHeaders.h
+proxygen/lib/utils/URL.h
+proxygen/lib/http/HTTPMethod.h +
+ * HTTPMethod::GET, HTTPMethod::POST
+proxygen/lib/utils/WheelTimerInstance.h
+
+_build/generated/proxygen/lib/http/HTTPCommonHeaders.h
