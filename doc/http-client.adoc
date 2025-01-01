@@ -15,27 +15,142 @@ participant "**WheelTimerInstance**\n\n" as WheelTimerInstance
 participant "**std::thread**\n\n" as thread
 participant "**Test**\n\n" as Test
 
-
 main -> Init : ctor{ &argc, &argv }
 main -> EventBase : eb=ctor{}
 
 main -> WheelTimerInstance : timer=ctor{ defaultTimeout, eb }
 note right #ff8888
-   must create before
-   starting event loop
+    must create before starting event loop
+   
+    Event handlers with timeout callbacks are registered with the timer.
+    If an event occurs before a timeout then the timeout callback is removed.
+    No race condition is possible since timeout events and all other events
+    are serviced from the same thread.
 end note 
 
 main -> thread : ctor{ run_event_loop( &eb ) }
 main -> Test : test=ctor{}
 
-Test -> HttpClient : ctor{}
-
 main -> Test : run()
 note left #ff0000: todo
 
 main -> thread : join()
+----
 
 
+=== run test
+
+[plantuml, "run-test-seq.puml", svg]
+----
+hide footbox
+
+participant "**EventBase**\n\n" as EventBase
+participant "**Test**\n\n" as Test
+participant "**HttpClient**\n\n" as HttpClient
+participant "**Future**\n\n" as Future
+participant "**HttpConnector**\n\n" as HttpConnector
+participant "**SocketAddress**\n\n" as SocketAddress
+participant "**HTTPUpstreamSession**\n\n" as HTTPUpstreamSession
+
+-> Test : run()
+Test -> HttpClient : ctor{ EventBase, timer, url, headers }
+
+HttpClient -> HttpConnector : ctor{ this, timer }
+
+Test -> HttpClient : POST( "nacho" )
+
+HttpClient -> SocketAddress : addr=ctor{ Host, Port, allowNameLookup=true }
+HttpClient -> HttpConnector : connect( EventBase, addr, ... )
+
+group connect success
+    EventBase -> HttpClient : connectSuccess( HTTPUpstreamSession )
+    HttpClient -> HTTPUpstreamSession : setFlowControl( 65536, 65536, 65536 )
+    note left: set receive buffer sizes, strange name?
+    
+    HttpClient -> TransactionHandler : txnHandler=ctor{ this }
+    
+    HttpClient -> HTTPUpstreamSession : txn=newTransaction( txnHandler )
+    'HTTPUpstreamSession -> HTTPUpstreamSession : newTransactionWithError( txnHandler )
+    'HTTPUpstreamSession -> HTTPUpstreamSession : startNow()
+    'HTTPUpstreamSession -> HTTPSession : startNow()    
+    'HTTPUpstreamSession -> HTTPSession : createTransaction()
+    
+    HttpClient -> HttpClient : setupHeaders()
+    note left: create HTTPMessage 
+    
+    HttpClient -> HTTPTransaction : sendHeaders( HTTPMessage )
+    HttpClient -> HTTPTransaction : sendEOM()
+    
+end group
+
+HttpClient --> Test : Future
+Test -> Future : thenValue( HttpResponseHandler )
+
+== post ==
+ 
+----
+
+=== how should it work?
+
+
+
+[source, c++]
+----
+void Test::run() {
+    httpClient.connect( address )
+              .thenValue([]() {
+              })
+              .thenError([]() {
+              });
+}
+----
+
+
+[plantuml, "state.puml", svg]
+----
+[*] --> Init
+Init --> TestSetup
+TestSetup --> TestStep
+TestStep --> Error
+TestStep --> Fail
+TestStep --> Pass
+
+'State1 : this is another string
+
+Pass --> TestSetup
+Pass --> [*]
+Fail --> [*]
+Error --> [*]
 
 ----
+
+
+=== class diagram
+
+[plantuml, "classes.puml", svg]
+----
+class "**HTTPSession**\n\nHTTPSession.h" as HTTPSession
+note left
+    This implements a LOT of
+    callback handler interfaces
+end note
+
+class "**HTTPUpstreamSession**\n\nHTTPUpstreamSession.h" as HTTPUpstreamSession
+class "**HTTPTransaction**\n\nHTTPTransaction.h" as HTTPTransaction
+
+
+HTTPSession <- HTTPUpstreamSession
+
+class HTTPSession {
+    {abstract} **setFlowControl**(\n  size_t initialReceiveWindow,\n  size_t receiveStreamWindowSize,\n  size_t receiveSessionWindowSize )
+}
+
+
+class HTTPTransaction {
+    +{abstract} sendHeaders( HTTPMessage )
+    +{abstract} sendHeadersWithEOM( HTTPMessage )
+}
+
+----
+
 
