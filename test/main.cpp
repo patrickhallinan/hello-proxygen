@@ -42,6 +42,8 @@ int main(int argc, char* argv[]) {
 
     Test test(eventBase, timer);
 
+    //test.run();
+
     eventThread.join();
 
     //

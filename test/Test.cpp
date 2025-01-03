@@ -22,13 +22,22 @@ Test::Test(folly::EventBase& eventBase, proxygen::WheelTimerInstance& timer) {
 
         auto url = fmt::format("http://{}:{}/", FLAGS_hello_host, FLAGS_hello_port);
 
-        httpClient_ = std::make_unique<HttpClient>(&eventBase, timer, url, httpHeaders());
+        httpClient_ = std::make_unique<HttpClient>(&eventBase, timer, httpHeaders(), url);
 
-        return httpClient_->POST("nacho")
-              .thenValue([](const HttpResponse&& response) {
-                  LOG(INFO) << "Status : " << response.status();
-                  LOG(INFO) << "Body   : " << response.body();
-              });
+        return httpClient_->connect()
+                          .thenValue([&](folly::Unit) {
+                              return httpClient_->POST("nacho");
+                          })
+                          .thenValue([&](const HttpResponse&& response) {
+                              LOG(INFO) << "Status : " << response.status();
+                              LOG(INFO) << "Body   : " << response.body();
+
+                              return httpClient_->POST("taco");
+                          })
+                          .thenValue([](const HttpResponse&& response) {
+                              LOG(INFO) << "Status : " << response.status();
+                              LOG(INFO) << "Body   : " << response.body();
+                          });
     });
 }
 

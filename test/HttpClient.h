@@ -38,11 +38,12 @@ class HttpClient : public proxygen::HTTPConnector::Callback {
 public:
     HttpClient(folly::EventBase*,
                proxygen::WheelTimerInstance,
-               const std::string& url,
-               const proxygen::HTTPHeaders&);
+               const proxygen::HTTPHeaders&,
+               const std::string& url);
 
     virtual ~HttpClient() = default;
 
+    folly::Future<folly::Unit> connect();
     folly::Future<HttpResponse> POST(const std::string& content);
 
     static proxygen::HTTPHeaders parseHeaders(const std::string& headersString);
@@ -55,10 +56,6 @@ public:
                        const std::string& keyPath = "");
     void sslHandshakeFollowup(proxygen::HTTPUpstreamSession* session) noexcept;
 
-    // HTTPConnector methods
-    void connectSuccess(proxygen::HTTPUpstreamSession* session) override;
-    void connectError(const folly::AsyncSocketException& ex) override;
-
     void sendRequest(proxygen::HTTPTransaction* txn);
 
     // Getters
@@ -67,34 +64,34 @@ public:
         return sslContext_;
     }
 
-    const std::string& getServerName() const;
-
-    void setFlowControlSettings(int32_t recvWindow);
-
 protected:
-    void setupHeaders();
+    // proxygen::HTTPConnector::Callback
+    void connectSuccess(proxygen::HTTPUpstreamSession*) override;
+    void connectError(const folly::AsyncSocketException&) override;
+
     void requestComplete(HttpResponse) noexcept;
     void requestError(const proxygen::HTTPException&) noexcept;
 
+private:
+    proxygen::HTTPMessage headers(proxygen::HTTPMethod, size_t contentLength=0);
+
     folly::EventBase* eb_{nullptr};
+    proxygen::HTTPHeaders headers_;
+    proxygen::URL url_;
+
+    proxygen::HTTPUpstreamSession* session_;
 
     proxygen::HTTPTransaction* txn_{nullptr};
-    proxygen::HTTPMethod httpMethod_;
-    proxygen::URL url_;
-    proxygen::HTTPMessage request_;
 
     folly::SSLContextPtr sslContext_;
 
-    int32_t recvWindow_{65536};
     bool egressPaused_{false};
-
-    std::string requestBody_;
 
     std::unique_ptr<folly::IOBuf> inputBuf_;
 
-    //folly::HHWheelTimer::UniquePtr eventTimer_;
     std::unique_ptr<proxygen::HTTPConnector> httpConnector_;
 
-    std::unique_ptr<folly::Promise<HttpResponse>> promise_;
+    std::unique_ptr<folly::Promise<folly::Unit>> connectPromise_;
+    std::unique_ptr<folly::Promise<HttpResponse>> requestPromise_;
 };
 

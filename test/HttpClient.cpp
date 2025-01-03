@@ -26,46 +26,41 @@ DECLARE_int32(recv_window);
 
 HttpClient::HttpClient(EventBase* eb,
                        WheelTimerInstance timer,
-                       const std::string& url,
-                       const HTTPHeaders& headers)
+                       const HTTPHeaders& headers,
+                       const std::string& url)
     : eb_{eb}
+    , headers_{headers}
     , url_{proxygen::URL{url}} {
-
-    headers.forEach([this](const string& header, const string& val) {
-        request_.getHeaders().add(header, val);
-    });
-
-    //auto defaultTimeout = std::chrono::milliseconds(5000);
-
-    // Scheduled events and timeout callbacks are registered with the timer.
-    // If an event occurs before a timeout then the timeout callback is removed
-    // from the timer. There cannot be a race condition since timeout events
-    // and all other events are serviced from the same thread.
-    //
-    // This is a big object.
-    //auto timer = WheelTimerInstance{defaultTimeout, eb};
 
     httpConnector_ =
         std::make_unique<proxygen::HTTPConnector>(this, timer);
-                                                  //WheelTimerInstance{timeout, eb});
 }
 
 
-folly::Future<HttpResponse> HttpClient::POST(const std::string& content) {
-    requestBody_ = content;
-    //httpMethod_ = *proxygen::stringToMethod("POST");
-    httpMethod_ = proxygen::HTTPMethod::POST;
-
+folly::Future<folly::Unit> HttpClient::connect() {
     folly::SocketAddress socketAddress{url_.getHost(), url_.getPort(), /*allowNameLookup*/true};
 
-    // intentionally static const
+    // intentional static const
     static const folly::SocketOptionMap socketOptions{{{SOL_SOCKET, SO_REUSEADDR}, 1}};
 
     //httpConnector_->reset();
     httpConnector_->connect(eb_, socketAddress, std::chrono::milliseconds(500), socketOptions);
 
-    promise_.reset(new folly::Promise<HttpResponse>{});
-    return promise_->getFuture();
+    connectPromise_.reset(new folly::Promise<folly::Unit>{});
+    return connectPromise_->getFuture();
+}
+
+
+folly::Future<HttpResponse> HttpClient::POST(const std::string& content) {
+    auto transactionHandler = new TransactionHandler{this};
+    txn_ = session_->newTransaction(transactionHandler);
+
+    txn_->sendHeaders(headers(proxygen::HTTPMethod::POST));
+    txn_->sendBody(folly::IOBuf::copyBuffer(content));
+    txn_->sendEOM();
+
+    requestPromise_.reset(new folly::Promise<HttpResponse>{});
+    return requestPromise_->getFuture();
 }
 
 
@@ -94,27 +89,23 @@ void HttpClient::initializeSsl(const string& caPath,
 
 
 void HttpClient::sslHandshakeFollowup(HTTPUpstreamSession* session) noexcept {
-  AsyncSSLSocket* sslSocket =
-      dynamic_cast<AsyncSSLSocket*>(session->getTransport());
 
-  const unsigned char* nextProto = nullptr;
-  unsigned nextProtoLength = 0;
-  sslSocket->getSelectedNextProtocol(&nextProto, &nextProtoLength);
-  if (nextProto) {
-    VLOG(1) << "Client selected next protocol "
-            << string((const char*)nextProto, nextProtoLength);
-  } else {
-    VLOG(1) << "Client did not select a next protocol";
-  }
+    AsyncSSLSocket* sslSocket =
+        dynamic_cast<AsyncSSLSocket*>(session->getTransport());
+
+    const unsigned char* nextProto = nullptr;
+    unsigned nextProtoLength = 0;
+    sslSocket->getSelectedNextProtocol(&nextProto, &nextProtoLength);
+    if (nextProto) {
+        VLOG(1) << "Client selected next protocol "
+              << string((const char*)nextProto, nextProtoLength);
+    } else {
+        VLOG(1) << "Client did not select a next protocol";
+    }
 
   // Note: This ssl session can be used by defining a member and setting
   // something like sslSession_ = sslSocket->getSSLSession() and then
   // passing it to the connector::connectSSL() method
-}
-
-
-void HttpClient::setFlowControlSettings(int32_t recvWindow) {
-    recvWindow_ = recvWindow;
 }
 
 
@@ -123,20 +114,12 @@ void HttpClient::connectSuccess(HTTPUpstreamSession* session) {
         sslHandshakeFollowup(session);
     }
 
-    session->setFlowControl(recvWindow_, recvWindow_, recvWindow_);
-    auto transactionHandler = new TransactionHandler{this};
-    txn_ = session->newTransaction(transactionHandler);
-    setupHeaders();
-    txn_->sendHeaders(request_);
+    session_ = session;
 
-    if (httpMethod_ == HTTPMethod::POST) {
-        // TODO: don't copy the string twice.
-        txn_->sendBody(folly::IOBuf::copyBuffer(requestBody_));
-    }
+    // Set various receive buffer sizes
+    session_->setFlowControl(65536, 65536, 65536);
 
-    txn_->sendEOM();
-
-    session->closeWhenIdle();
+    connectPromise_->setValue(folly::unit);
 }
 
 
@@ -145,51 +128,47 @@ void HttpClient::connectError(const folly::AsyncSocketException& ex) {
 }
 
 
-void HttpClient::setupHeaders() {
-    request_.setMethod(httpMethod_);
-    request_.setHTTPVersion(1, 1);
-    request_.setURL(url_.makeRelativeURL());
-    request_.setSecure(url_.isSecure());
+proxygen::HTTPMessage HttpClient::headers(proxygen::HTTPMethod method, size_t contentLength) {
+    proxygen::HTTPMessage httpMessage;
 
-    auto& headers = request_.getHeaders();
+    httpMessage.setMethod(method);
+    httpMessage.setHTTPVersion(1, 1);
+    httpMessage.setURL(url_.makeRelativeURL());
+    httpMessage.setSecure(url_.isSecure());
 
-    /*
-    if (! headers.getNumberOfValues(HTTP_HEADER_USER_AGENT)) {
-        headers.add(HTTP_HEADER_USER_AGENT, "hello-agent");
-    }
-    */
+    headers_.forEach([&httpMessage](const string& header, const string& val) {
+        httpMessage.getHeaders().add(header, val);
+    });
 
-    if (! headers.getNumberOfValues(HTTP_HEADER_HOST)) {
-        headers.add(HTTP_HEADER_HOST, url_.getHostAndPort());
+    if (! httpMessage.getHeaders().getNumberOfValues(HTTP_HEADER_USER_AGENT)) {
+        httpMessage.getHeaders().add(HTTP_HEADER_USER_AGENT, "http-client");
     }
 
-    if (! headers.getNumberOfValues(HTTP_HEADER_ACCEPT)) {
-        headers.add("Accept", "*/*");
+    if (! httpMessage.getHeaders().getNumberOfValues(HTTP_HEADER_HOST)) {
+        httpMessage.getHeaders().add(HTTP_HEADER_HOST, url_.getHostAndPort());
     }
 
-    request_.dumpMessage(4);
+    if (! httpMessage.getHeaders().getNumberOfValues(HTTP_HEADER_ACCEPT)) {
+        httpMessage.getHeaders().add(HTTP_HEADER_ACCEPT, "*/*");
+    }
+
+    httpMessage.getHeaders().add(HTTP_HEADER_CONTENT_LENGTH, contentLength);
+
+    httpMessage.dumpMessage(4);
+
+    return httpMessage;
 }
 
 
 void HttpClient::requestComplete(HttpResponse httpResponse) noexcept {
-    promise_->setValue(std::move(httpResponse));
+    txn_ = nullptr;
+    requestPromise_->setValue(std::move(httpResponse));
 }
 
 
 void HttpClient::requestError(const proxygen::HTTPException& error) noexcept {
+    txn_ = nullptr;
     LOG(ERROR) << "statusCode: " << error.getHttpStatusCode() << ", errorMessage: " << error.what();
-    promise_->setException(error);
-}
-
-
-const string& HttpClient::getServerName() const {
-
-    const string& res = request_.getHeaders().getSingleOrEmpty(HTTP_HEADER_HOST);
-
-    if (res.empty()) {
-        return url_.getHost();
-    }
-
-    return res;
+    requestPromise_->setException(error);
 }
 
