@@ -26,7 +26,9 @@ Test::Test(folly::EventBase& eventBase, proxygen::WheelTimerInstance& timer) {
 
         return httpClient_->connect()
                           .thenValue([&](folly::Unit) {
-                              return httpClient_->POST("nacho");
+                              LOG(INFO) << "Connected!";
+
+                              return httpClient_->GET();
                           })
                           .thenValue([&](const HttpResponse&& response) {
                               LOG(INFO) << "Status : " << response.status();
@@ -37,6 +39,11 @@ Test::Test(folly::EventBase& eventBase, proxygen::WheelTimerInstance& timer) {
                           .thenValue([](const HttpResponse&& response) {
                               LOG(INFO) << "Status : " << response.status();
                               LOG(INFO) << "Body   : " << response.body();
+                              /*
+                          })
+                          .thenError(folly::tag_t<std::exception>{}, [](const std::exception& e) {
+                              LOG(INFO) << "Exception : " << e.what();
+                              */
                           });
     });
 }

@@ -44,9 +44,8 @@ public:
     virtual ~HttpClient() = default;
 
     folly::Future<folly::Unit> connect();
+    folly::Future<HttpResponse> GET();
     folly::Future<HttpResponse> POST(const std::string& content);
-
-    static proxygen::HTTPHeaders parseHeaders(const std::string& headersString);
 
     // initial SSL related structures
     // rely on gflags
@@ -55,14 +54,6 @@ public:
                        const std::string& certPath = "",
                        const std::string& keyPath = "");
     void sslHandshakeFollowup(proxygen::HTTPUpstreamSession* session) noexcept;
-
-    void sendRequest(proxygen::HTTPTransaction* txn);
-
-    // Getters
-
-    folly::SSLContextPtr getSSLContext() {
-        return sslContext_;
-    }
 
 protected:
     // proxygen::HTTPConnector::Callback

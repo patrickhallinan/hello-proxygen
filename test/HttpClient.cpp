@@ -32,12 +32,12 @@ HttpClient::HttpClient(EventBase* eb,
     , headers_{headers}
     , url_{proxygen::URL{url}} {
 
-    httpConnector_ =
-        std::make_unique<proxygen::HTTPConnector>(this, timer);
-}
+        httpConnector_ = std::make_unique<proxygen::HTTPConnector>(this, timer);
+    }
 
 
 folly::Future<folly::Unit> HttpClient::connect() {
+
     folly::SocketAddress socketAddress{url_.getHost(), url_.getPort(), /*allowNameLookup*/true};
 
     // intentional static const
@@ -51,11 +51,23 @@ folly::Future<folly::Unit> HttpClient::connect() {
 }
 
 
+folly::Future<HttpResponse> HttpClient::GET() {
+    auto transactionHandler = new TransactionHandler{this};
+    txn_ = session_->newTransaction(transactionHandler);
+
+    txn_->sendHeaders(headers(proxygen::HTTPMethod::GET));
+    txn_->sendEOM();
+
+    requestPromise_.reset(new folly::Promise<HttpResponse>{});
+    return requestPromise_->getFuture();
+}
+
+
 folly::Future<HttpResponse> HttpClient::POST(const std::string& content) {
     auto transactionHandler = new TransactionHandler{this};
     txn_ = session_->newTransaction(transactionHandler);
 
-    txn_->sendHeaders(headers(proxygen::HTTPMethod::POST));
+    txn_->sendHeaders(headers(proxygen::HTTPMethod::POST, content.size()));
     txn_->sendBody(folly::IOBuf::copyBuffer(content));
     txn_->sendEOM();
 
@@ -116,7 +128,7 @@ void HttpClient::connectSuccess(HTTPUpstreamSession* session) {
 
     session_ = session;
 
-    // Set various receive buffer sizes
+    // Set receive buffer sizes
     session_->setFlowControl(65536, 65536, 65536);
 
     connectPromise_->setValue(folly::unit);
@@ -152,7 +164,7 @@ proxygen::HTTPMessage HttpClient::headers(proxygen::HTTPMethod method, size_t co
         httpMessage.getHeaders().add(HTTP_HEADER_ACCEPT, "*/*");
     }
 
-    httpMessage.getHeaders().add(HTTP_HEADER_CONTENT_LENGTH, contentLength);
+    httpMessage.getHeaders().add(HTTP_HEADER_CONTENT_LENGTH, std::to_string(contentLength));
 
     httpMessage.dumpMessage(4);
 
