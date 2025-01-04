@@ -38,9 +38,63 @@ main -> thread : join()
 ----
 
 
-=== run test
+=== test
 
 [plantuml, "run-test-seq.puml", svg]
+----
+hide footbox
+
+participant "**EventBase**\n\n" as EventBase
+participant "**Test**\n\n" as Test
+participant "**HttpClient**\n\n" as HttpClient
+participant "**Future**\n\n" as Future
+participant "**HttpConnector**\n\n" as HttpConnector
+participant "**SocketAddress**\n\n" as SocketAddress
+participant "**HTTPUpstreamSession**\n\n" as HTTPUpstreamSession
+
+-> Test : run()
+Test -> HttpClient : ctor{ EventBase, timer, url, headers }
+
+HttpClient -> HttpConnector : ctor{ this, timer }
+
+Test -> HttpClient : POST( "nacho" )
+
+HttpClient -> SocketAddress : addr=ctor{ Host, Port, allowNameLookup=true }
+HttpClient -> HttpConnector : connect( EventBase, addr, ... )
+
+group connect success
+    EventBase -> HttpClient : connectSuccess( HTTPUpstreamSession )
+    HttpClient -> HTTPUpstreamSession : setFlowControl( 65536, 65536, 65536 )
+    note left: set receive buffer sizes, strange name?
+    
+    HttpClient -> TransactionHandler : txnHandler=ctor{ this }
+    
+    HttpClient -> HTTPUpstreamSession : txn=newTransaction( txnHandler )
+    'HTTPUpstreamSession -> HTTPUpstreamSession : newTransactionWithError( txnHandler )
+    'HTTPUpstreamSession -> HTTPUpstreamSession : startNow()
+    'HTTPUpstreamSession -> HTTPSession : startNow()    
+    'HTTPUpstreamSession -> HTTPSession : createTransaction()
+    
+    HttpClient -> HttpClient : setupHeaders()
+    note left: create HTTPMessage 
+    
+    HttpClient -> HTTPTransaction : sendHeaders( HTTPMessage )
+    HttpClient -> HTTPTransaction : sendEOM()
+    
+end group
+
+HttpClient --> Test : Future
+Test -> Future : thenValue( HttpResponseHandler )
+
+== post ==
+ 
+----
+
+
+
+=== original
+
+[plantuml, "original-seq.puml", svg]
 ----
 hide footbox
 
@@ -99,8 +153,10 @@ Test -> Future : thenValue( HttpResponseHandler )
 void Test::run() {
     httpClient.connect( address )
               .thenValue([]() {
+                  return run_tests();
               })
               .thenError([]() {
+                  // How to distinguish fail vs. error?
               });
 }
 ----
@@ -108,16 +164,16 @@ void Test::run() {
 
 [plantuml, "state.puml", svg]
 ----
-[*] --> Init
-Init --> TestSetup
-TestSetup --> TestStep
+[*] --> Setup
+Setup --> TestStep
+Setup --> Error
 TestStep --> Error
 TestStep --> Fail
 TestStep --> Pass
 
 'State1 : this is another string
 
-Pass --> TestSetup
+Pass --> Setup
 Pass --> [*]
 Fail --> [*]
 Error --> [*]
@@ -129,6 +185,8 @@ Error --> [*]
 
 [plantuml, "classes.puml", svg]
 ----
+class "**HttpClient**\n\n" as HttpClient
+
 class "**HTTPSession**\n\nHTTPSession.h" as HTTPSession
 note left
     This implements a LOT of
@@ -141,6 +199,14 @@ class "**HTTPTransaction**\n\nHTTPTransaction.h" as HTTPTransaction
 
 HTTPSession <- HTTPUpstreamSession
 
+class HttpClient {
+    - Promise connected_
+    
+    + Promise **connect**( host, port )
+    + Future<HttpResponse> **GET**( path )
+    + Future<HttpResponse> **POST**( path, content )
+}
+
 class HTTPSession {
     {abstract} **setFlowControl**(\n  size_t initialReceiveWindow,\n  size_t receiveStreamWindowSize,\n  size_t receiveSessionWindowSize )
 }
@@ -149,6 +215,19 @@ class HTTPSession {
 class HTTPTransaction {
     +{abstract} sendHeaders( HTTPMessage )
     +{abstract} sendHeadersWithEOM( HTTPMessage )
+}
+
+
+class HTTPMessage {
+    folly::Optional<HTTPMethod> getMethod()
+    
+    string getProtocolString()
+    string getMethodString()
+    string getPath()
+    string getQueryString()
+    string getURL()
+
+    getHeaders()
 }
 
 ----
