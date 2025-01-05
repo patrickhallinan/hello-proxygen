@@ -18,11 +18,11 @@ class Test {
 public:
     Test(folly::EventBase& eventBase, proxygen::WheelTimerInstance& timer);
 
-    //void run();
+    void run();
 
 private:
-    //folly::EventBase& eventBase;
-    //proxygen::WheelTimerInstance& timer;
+    folly::EventBase& eventBase_;
+    proxygen::WheelTimerInstance& timer_;
 
     std::unique_ptr<HttpClient> httpClient_;
 };

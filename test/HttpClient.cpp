@@ -25,25 +25,27 @@ DECLARE_int32(recv_window);
 
 
 HttpClient::HttpClient(EventBase* eb,
-                       WheelTimerInstance timer,
+                       proxygen::WheelTimerInstance& timer,
                        const HTTPHeaders& headers,
                        const std::string& url)
     : eb_{eb}
+    , timer_{timer}
     , headers_{headers}
     , url_{proxygen::URL{url}} {
 
-        httpConnector_ = std::make_unique<proxygen::HTTPConnector>(this, timer);
-    }
+    httpConnector_ = std::make_unique<proxygen::HTTPConnector>(this, timer_);
+}
 
 
 folly::Future<folly::Unit> HttpClient::connect() {
 
     folly::SocketAddress socketAddress{url_.getHost(), url_.getPort(), /*allowNameLookup*/true};
 
-    // intentional static const
     static const folly::SocketOptionMap socketOptions{{{SOL_SOCKET, SO_REUSEADDR}, 1}};
 
-    //httpConnector_->reset();
+    // XXX: Is WheelTimerInstance BIG?
+    // XXX: Can we create the timer inside HttpClient?
+
     httpConnector_->connect(eb_, socketAddress, std::chrono::milliseconds(500), socketOptions);
 
     connectPromise_.reset(new folly::Promise<folly::Unit>{});

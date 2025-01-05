@@ -3,7 +3,6 @@
 #include "HttpClient.h"
 
 #include <folly/io/async/EventBase.h>
-//#include <proxygen/lib/http/HTTPCommonHeaders.h>
 
 #include <gflags/gflags_declare.h>
 
@@ -15,35 +14,39 @@ DECLARE_int32(hello_port);
 proxygen::HTTPHeaders httpHeaders();
 
 
-Test::Test(folly::EventBase& eventBase, proxygen::WheelTimerInstance& timer) {
-    //eventBase.runInEventBaseThreadAndWait([&]() {
-    eventBase.runInEventBaseThread([&]() {
-        std::cout << "runInEventBaseThreadAndWait()\n";
+Test::Test(folly::EventBase& eventBase, proxygen::WheelTimerInstance& timer)
+    : eventBase_{eventBase}
+    , timer_{timer} {
 
-        auto url = fmt::format("http://{}:{}/", FLAGS_hello_host, FLAGS_hello_port);
+    auto url = fmt::format("http://{}:{}/", FLAGS_hello_host, FLAGS_hello_port);
+    httpClient_ = std::make_unique<HttpClient>(&eventBase_, timer_, httpHeaders(), url);
+}
 
-        httpClient_ = std::make_unique<HttpClient>(&eventBase, timer, httpHeaders(), url);
 
-        return httpClient_->connect()
-                          .thenValue([&](folly::Unit) {
+void Test::run() {
+    HttpClient* http_client = httpClient_.get();
+
+    // XXX: We sometimes crash if this is called after the event loop is started!
+    eventBase_.runInEventBaseThread([httpClient=http_client]() {
+
+        return httpClient->connect()
+                          .thenValue([httpClient](folly::Unit) {
                               LOG(INFO) << "Connected!";
 
-                              return httpClient_->GET();
+                              return httpClient->GET();
                           })
-                          .thenValue([&](const HttpResponse&& response) {
+                          .thenValue([httpClient](const HttpResponse&& response) {
                               LOG(INFO) << "Status : " << response.status();
                               LOG(INFO) << "Body   : " << response.body();
 
-                              return httpClient_->POST("taco");
+                              return httpClient->POST("taco");
                           })
                           .thenValue([](const HttpResponse&& response) {
                               LOG(INFO) << "Status : " << response.status();
                               LOG(INFO) << "Body   : " << response.body();
-                              /*
                           })
                           .thenError(folly::tag_t<std::exception>{}, [](const std::exception& e) {
                               LOG(INFO) << "Exception : " << e.what();
-                              */
                           });
     });
 }

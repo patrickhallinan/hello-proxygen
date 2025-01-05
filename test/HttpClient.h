@@ -37,7 +37,7 @@ class HttpClient : public proxygen::HTTPConnector::Callback {
 
 public:
     HttpClient(folly::EventBase*,
-               proxygen::WheelTimerInstance,
+               proxygen::WheelTimerInstance&,
                const proxygen::HTTPHeaders&,
                const std::string& url);
 
@@ -67,6 +67,7 @@ private:
     proxygen::HTTPMessage headers(proxygen::HTTPMethod, size_t contentLength=0);
 
     folly::EventBase* eb_{nullptr};
+    proxygen::WheelTimerInstance& timer_;
     proxygen::HTTPHeaders headers_;
     proxygen::URL url_;
 

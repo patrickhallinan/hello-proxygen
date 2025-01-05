@@ -37,5 +37,5 @@ link_directories(
 )
 
 
-add_subdirectory(http-server)
+add_subdirectory(server)
 add_subdirectory(test)
