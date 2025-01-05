@@ -11,7 +11,12 @@ DECLARE_string(hello_host);
 DECLARE_int32(hello_port);
 
 
-proxygen::HTTPHeaders httpHeaders();
+static proxygen::HTTPHeaders httpHeaders();
+
+
+template <typename T>
+void assert_equal(T a, T b, std::string msg) {
+}
 
 
 Test::Test(folly::EventBase& eventBase, proxygen::WheelTimerInstance& timer)

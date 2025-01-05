@@ -137,8 +137,9 @@ void HttpClient::connectSuccess(HTTPUpstreamSession* session) {
 }
 
 
-void HttpClient::connectError(const folly::AsyncSocketException& ex) {
-    LOG(ERROR) << "Coudln't connect to " << url_.getHostAndPort() << ":" << ex.what();
+void HttpClient::connectError(const folly::AsyncSocketException& e) {
+    LOG(ERROR) << url_.getHostAndPort() << ": " << e.what();
+    connectPromise_->setException(e);
 }
 
 

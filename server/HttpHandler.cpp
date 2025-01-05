@@ -5,33 +5,34 @@
 #include <proxygen/httpserver/ResponseBuilder.h>
 
 
-void HttpHandler::onRequest(std::unique_ptr<proxygen::HTTPMessage> headers) noexcept {
-    headers_ = std::move(headers);
+void HttpHandler::onRequest(std::unique_ptr<proxygen::HTTPMessage> message) noexcept {
+    httpMessage_ = std::move(message);
 
-    LOG(INFO) << headers_->getMethodString() << " " << headers_->getPath()
-        << " HTTP/" << headers_->getProtocolString();
-    // GET /path/to/resource HTTP/1.1
+    LOG(INFO) << httpMessage_->getMethodString()
+        << " " << httpMessage_->getPath()
+        << " HTTP/" << httpMessage_->getProtocolString();
 
-    headers_->getHeaders().forEach([](const std::string& header, const std::string& val) {
+    httpMessage_->getHeaders().forEach([](const std::string& header,
+                                          const std::string& val) {
         LOG(INFO) << header << ": " << val;
     });
 }
 
 
-void HttpHandler::onBody(std::unique_ptr<folly::IOBuf> body) noexcept {
-    if (body_) {
-        body_->prependChain(std::move(body));
+void HttpHandler::onBody(std::unique_ptr<folly::IOBuf> chunk) noexcept {
+    if (buf_) {
+        buf_->prependChain(std::move(chunk));
     } else {
-        body_ = std::move(body);
+        buf_ = std::move(chunk);
     }
 }
 
 
 void HttpHandler::onEOM() noexcept {
-    if (body_) {
-        std::string content = body_->moveToFbString().toStdString();
+    if (buf_) {
+        content_ = buf_->moveToFbString().toStdString();
         LOG(INFO) << "";
-        LOG(INFO) << content;
+        LOG(INFO) << content_;
     }
 
     LOG(INFO) << "";

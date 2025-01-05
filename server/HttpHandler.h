@@ -38,6 +38,8 @@ public:
 
 private:
     folly::EventBase* eb_;
-    std::unique_ptr<folly::IOBuf> body_;
-    std::unique_ptr<proxygen::HTTPMessage> headers_;
+    std::unique_ptr<proxygen::HTTPMessage> httpMessage_;
+    std::unique_ptr<folly::IOBuf> buf_;
+
+    std::string content_;
 };
