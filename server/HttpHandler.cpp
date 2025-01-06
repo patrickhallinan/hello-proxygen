@@ -39,7 +39,7 @@ void HttpHandler::onEOM() noexcept {
 
     proxygen::ResponseBuilder(downstream_)
         .status(200, "OK")
-        .body("Hello\n")
+        .body("Hello")
         .sendWithEOM();
 }
 

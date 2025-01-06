@@ -3,9 +3,9 @@
 #include "HttpClient.h"
 
 #include <folly/io/async/EventBase.h>
-
 #include <gflags/gflags_declare.h>
 
+#include <source_location>
 
 DECLARE_string(hello_host);
 DECLARE_int32(hello_port);
@@ -14,8 +14,12 @@ DECLARE_int32(hello_port);
 static proxygen::HTTPHeaders httpHeaders();
 
 
-template <typename T>
-void assert_equal(T a, T b, std::string msg) {
+template<typename T, typename U>
+void assert_equal(T const& a, U const& b, const std::source_location& loc = std::source_location::current()) {
+    if (a != b) {
+        std::string msg =  std::format("Failed: '{}' != '{}'  --> {}:{}", a, b, loc.file_name(), loc.line());
+        throw std::runtime_error(msg);
+    }
 }
 
 
@@ -44,14 +48,18 @@ void Test::run() {
                               LOG(INFO) << "Status : " << response.status();
                               LOG(INFO) << "Body   : " << response.body();
 
-                              return httpClient->POST("taco");
+                              assert_equal(response.body(), "Hello");
+
+                              return httpClient->POST("Echo");
                           })
                           .thenValue([](const HttpResponse&& response) {
                               LOG(INFO) << "Status : " << response.status();
                               LOG(INFO) << "Body   : " << response.body();
+
+                              assert_equal(response.body(), "Echo");
                           })
                           .thenError(folly::tag_t<std::exception>{}, [](const std::exception& e) {
-                              LOG(INFO) << "Exception : " << e.what();
+                              LOG(INFO) << e.what();
                           });
     });
 }
