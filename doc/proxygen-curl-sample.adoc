@@ -1,5 +1,14 @@
 = proxygen curl sample
 
+```bash
+proxygen/proxygen/_build/proxygen/httpclient/samples/curl/proxygen_curl
+```
+
+```bash
+proxygen/proxygen/_build/proxygen/httpclient/samples/curl/proxygen_curl  --url=http://localhost:8080
+```
+
+
 == uml
 
 === startup
@@ -42,8 +51,6 @@ main -> HTTPConnector : connect( eb, addr, timeout, opts )
 
 main -> EventBase : loop()
 
-==  VERIFIED TO HERE!!!!!!!!!!!!!!!!!!!!!!!!!! ==
-
 ----
 
 === GET
@@ -52,50 +59,55 @@ main -> EventBase : loop()
 ----
 hide footbox
 
-participant "**EventBase**\n\n" as EventBase
-participant "**Test**\n\n" as Test
-participant "**HttpClient**\n\n" as HttpClient
-participant "**Future**\n\n" as Future
-participant "**HttpConnector**\n\n" as HttpConnector
-participant "**SocketAddress**\n\n" as SocketAddress
+participant "**HTTPConnector**\n\n" as HTTPConnector
+participant "**CurlClient**\n\n" as CurlClient
 participant "**HTTPUpstreamSession**\n\n" as HTTPUpstreamSession
+participant "**HTTPSession**\n\n" as HTTPSession
+participant "**HTTPTransaction**\n\n" as HTTPTransaction
 
--> Test : run()
-Test -> HttpClient : ctor{ EventBase, timer, url, headers }
 
-HttpClient -> HttpConnector : ctor{ this, timer }
+== connect success ==
 
-Test -> HttpClient : POST( "nacho" )
+HTTPConnector -> CurlClient : connectSuccess( HTTPUpstreamSession )
+CurlClient -> HTTPUpstreamSession : setFlowControl( 65536, 65536, 65536 )
+note left: set receive buffer sizes
 
-HttpClient -> SocketAddress : addr=ctor{ Host, Port, allowNameLookup=true }
-HttpClient -> HttpConnector : connect( EventBase, addr, ... )
-
-group connect success
-    EventBase -> HttpClient : connectSuccess( HTTPUpstreamSession )
-    HttpClient -> HTTPUpstreamSession : setFlowControl( 65536, 65536, 65536 )
-    note left: set receive buffer sizes, strange name?
-    
-    HttpClient -> TransactionHandler : txnHandler=ctor{ this }
-    
-    HttpClient -> HTTPUpstreamSession : txn=newTransaction( txnHandler )
-    'HTTPUpstreamSession -> HTTPUpstreamSession : newTransactionWithError( txnHandler )
-    'HTTPUpstreamSession -> HTTPUpstreamSession : startNow()
-    'HTTPUpstreamSession -> HTTPSession : startNow()    
-    'HTTPUpstreamSession -> HTTPSession : createTransaction()
-    
-    HttpClient -> HttpClient : setupHeaders()
-    note left: create HTTPMessage 
-    
-    HttpClient -> HTTPTransaction : sendHeaders( HTTPMessage )
-    HttpClient -> HTTPTransaction : sendEOM()
-    
+group create transaction
+    CurlClient -> HTTPUpstreamSession : txn=newTransaction( this )
+    HTTPUpstreamSession -> HTTPUpstreamSession : newTransactionWithError( txnHandler )
+    HTTPUpstreamSession -> HTTPUpstreamSession : startNow()
+    HTTPUpstreamSession -> HTTPSession : startNow()    
+    HTTPUpstreamSession -> HTTPSession : createTransaction()
+    HTTPUpstreamSession -> CurlClient : HTTPTransaction
 end group
 
-HttpClient --> Test : Future
-Test -> Future : thenValue( HttpResponseHandler )
+group send request
+    CurlClient <- CurlClient : sendRequest( txn )
+    CurlClient -> CurlClient : setupHeaders()
+    note left: create HTTPMessage
+    CurlClient -> HTTPTransaction : sendHeaders( HTTPMessage )
+    CurlClient -> HTTPTransaction : sendEOM()
+end group
 
-== post ==
- 
+CurlClient -> HTTPUpstreamSession : closeWhenIdle()    
+
+== response events ==
+
+HTTPTransaction -> CurlClient : onHeadersComplete( unique_ptr<proxygen::HTTPMessage> )
+
+HTTPTransaction -> CurlClient : onBody( unique_ptr<folly::IOBuf> )
+note left
+    called repeatedly until
+    message is complete
+end note
+
+HTTPTransaction -> CurlClient : onEOM()
+note across
+    **NOTE:** CurlClient::onError() can be called between HttpClient::onEOM() and HttpClient::detachTransaction()
+end note
+
+HTTPTransaction -> CurlClient : detachTransaction()
+
 ----
 
 
@@ -103,26 +115,93 @@ Test -> Future : thenValue( HttpResponseHandler )
 
 [plantuml, "classes.puml", svg]
 ----
-class "**HTTPSession**\n\nHTTPSession.h" as HTTPSession
-note left
-    This implements a LOT of
-    callback handler interfaces
-end note
+class "**AsyncSocket**" as AsyncSocket
 
+class "**AsyncSocketTransport**\n\nfolly/io/async/AsyncSocketTransport.h" as AsyncSocketTransport
+
+class "**Callback**\n\nhttp/HTTPConnector.h" as Callback
+abstract "**ConnectCallback**\n\nfolly/io/async/AsyncSocketTransport.h*" as ConnectCallback
+
+class "**EventBase**" as EventBase
+note bottom: drives everything
+
+class "**HTTPConnector**\n\nhttp/HTTPConnector.h" as HTTPConnector
+class "**HTTPTransactionHandler**\n\nhttp/session/HTTPTransaction.h" as HTTPTransactionHandler
 class "**HTTPUpstreamSession**\n\nHTTPUpstreamSession.h" as HTTPUpstreamSession
 class "**HTTPTransaction**\n\nHTTPTransaction.h" as HTTPTransaction
+class "**CurlClient**\n\n" as CurlClient
 
+class "**HTTPSession**\n\nHTTPSession.h" as HTTPSession
+note left
+    Implements a LOT of
+    handler interfaces
+end note
+
+
+AsyncSocketTransport <-- AsyncSocket
+
+ConnectCallback <- HTTPConnector
+
+Callback <-- CurlClient
+HTTPTransactionHandler <-- CurlClient
 
 HTTPSession <- HTTPUpstreamSession
 
-class HTTPSession {
-    {abstract} **setFlowControl**(\n  size_t initialReceiveWindow,\n  size_t receiveStreamWindowSize,\n  size_t receiveSessionWindowSize )
+AsyncSocketTransport +-- ConnectCallback
+HTTPConnector +-- Callback
+
+HTTPConnector o-- AsyncSocket
+
+HTTPSession o-- HTTPTransaction
+HTTPTransaction o-- HTTPTransactionHandler
+
+
+class EventBase {
+    +loop()
+    +loopForever()
 }
 
+class HTTPSession {
+    {abstract} **setFlowControl**(\n  initialRcvWindow,\n  rcvStreamWindowSize,\n  rcvSessionWindowSize )
+}
 
 class HTTPTransaction {
     +{abstract} sendHeaders( HTTPMessage )
     +{abstract} sendHeadersWithEOM( HTTPMessage )
 }
 
+class CurlClient #LightGreen {
+    {abstract} connectSuccess()
+    {abstract} connectErr( AsyncSocketException )
+    {abstract} preConnect( NetworkSocket )
+
+    {abstract} void setTransaction( HTTPTransaction )
+    {abstract}  void detachTransaction()
+    {abstract}  void onHeadersComplete( unique_ptr<HTTPMessage> )
+    {abstract}  void onBody( unique_ptr<folly::IOBuf> )
+}
+
+class ConnectCallback {
+    {abstract} connectSuccess() = 0
+    {abstract} connectErr( AsyncSocketException ) = 0
+    {abstract} preConnect( NetworkSocket /*fd*/ )
+}
+
+class Callback {
+    {abstract} connectSuccess( HTTPUpstreamSession ) = 0
+    {abstract} connectError( folly::AsyncSocketException ) = 0
+    {abstract} preConnect( folly::AsyncTransport* )
+}
+
+class HTTPTransactionHandler {
+    {abstract} void setTransaction( HTTPTransaction* txn )
+
+    {abstract}  void detachTransaction() // transaction no longer valid
+
+    {abstract} void onHeadersComplete( unique_ptr<HTTPMessage> )
+    {abstract} void onBody( unique_ptr<folly::IOBuf> chain )
+    {abstract} void onEOM()
+
+    {abstract} void onError( HTTPException )
+}
 ----
