@@ -5,7 +5,7 @@
 #include <proxygen/httpserver/HTTPServer.h>
 
 
-static int run();
+static void run();
 
 
 int main(int argc, char *argv[]) {
@@ -14,11 +14,18 @@ int main(int argc, char *argv[]) {
 
     folly::Init init(&argc, &argv); // calls google::InitGoogleLogging()
 
-    return run();
+    try {
+        run();
+    } catch (const std::exception& e) {
+        LOG(ERROR) << e.what();
+        return 1;
+    }
+
+    return 0;
 }
 
 
-int run() {
+void run() {
     proxygen::HTTPServerOptions httpServerOptions;
     httpServerOptions.shutdownOn = {SIGINT, SIGTERM};
     httpServerOptions.handlerFactories = proxygen::RequestHandlerChain()
@@ -37,6 +44,4 @@ int run() {
     LOG(INFO) << "Starting HTTP server on port " << httpPort;
     server.start();
     LOG(INFO) << "HTTP server exited";
-
-    return 0;
 }

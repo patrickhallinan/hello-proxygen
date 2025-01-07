@@ -61,11 +61,19 @@ void Test::run() {
 
                               return httpClient->POST("Echo");
                           })
-                          .thenValue([](const HttpResponse&& response) {
+                          .thenValue([httpClient](const HttpResponse&& response) {
                               LOG(INFO) << "Status : " << response.status();
                               LOG(INFO) << "Body   : " << response.body();
 
                               assert_equal(response.body(), "Echo");
+
+                              return httpClient->POST("");
+                          })
+                          .thenValue([](const HttpResponse&& response) {
+                              LOG(INFO) << "Status : " << response.status();
+                              LOG(INFO) << "Body   : " << response.body();
+
+                              assert_equal(response.body(), "CONTENT MISSING");
                           })
                           .thenError(folly::tag_t<std::exception>{}, [](const std::exception& e) {
                               passed = false;

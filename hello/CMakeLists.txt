@@ -1,6 +1,7 @@
 add_executable(hello
     HttpHandlerFactory.cpp
-    HttpHandler.cpp
+    EchoHandler.cpp
+    HelloHandler.cpp
 
     main.cpp
 )

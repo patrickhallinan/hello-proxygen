@@ -1,6 +1,7 @@
 #pragma once
 
-#include "HttpHandler.h"
+#include "EchoHandler.h"
+#include "HelloHandler.h"
 
 #include <proxygen/httpserver/HTTPServer.h>
 
@@ -24,6 +25,21 @@ public:
     proxygen::RequestHandler* onRequest(proxygen::RequestHandler* handler,
                                         proxygen::HTTPMessage* httpMessage) noexcept override {
 
-        return new HttpHandler{eb_};
+        LOG(INFO) << "";
+        LOG(INFO) << httpMessage->getMethodString()
+            << " " << httpMessage->getPath()
+            << " HTTP/" << httpMessage->getProtocolString();
+
+        httpMessage->getHeaders().forEach([](const std::string& header,
+                                              const std::string& val) {
+
+            LOG(INFO) << header << ": " << val;
+        });
+
+        if (httpMessage->getMethod() == proxygen::HTTPMethod::POST) {
+            return new EchoHandler{eb_};
+        } else {
+            return new HelloHandler{eb_};
+        }
     }
 };
