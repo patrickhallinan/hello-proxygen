@@ -7,8 +7,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Set the C++ standard to C++23 for all targets
 set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)  # This makes the C++ standard a requirement
-set(CMAKE_CXX_EXTENSIONS OFF)        # Use the standard C++ without compiler-specific extensions
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(GCC_COMPILE_FLAGS "-Wfatal-errors -g")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_COMPILE_FLAGS}")
@@ -42,5 +41,5 @@ link_directories(
 )
 
 
-add_subdirectory(server)
+add_subdirectory(hello)
 add_subdirectory(test)

@@ -15,9 +15,14 @@ static proxygen::HTTPHeaders httpHeaders();
 
 
 template<typename T, typename U>
-void assert_equal(T const& a, U const& b, const std::source_location& loc = std::source_location::current()) {
+void assert_equal(T const& a, U const& b,
+                  const std::source_location& loc = std::source_location::current()) {
+
     if (a != b) {
-        std::string msg =  std::format("Failed: '{}' != '{}'  --> {}:{}", a, b, loc.file_name(), loc.line());
+
+        std::string msg =  std::format("Failed: '{}' != '{}'  -> {}:{}",
+            a, b, loc.file_name(), loc.line());
+
         throw std::runtime_error(msg);
     }
 }
@@ -37,6 +42,10 @@ void Test::run() {
 
     // XXX: We sometimes crash if this is called after the event loop is started!
     eventBase_.runInEventBaseThread([httpClient=http_client]() {
+
+        static bool passed;
+
+        passed = true;
 
         return httpClient->connect()
                           .thenValue([httpClient](folly::Unit) {
@@ -59,7 +68,16 @@ void Test::run() {
                               assert_equal(response.body(), "Echo");
                           })
                           .thenError(folly::tag_t<std::exception>{}, [](const std::exception& e) {
+                              passed = false;
                               LOG(INFO) << e.what();
+                          })
+                          .thenValue([](folly::Unit) {
+                              if (passed) {
+                                  LOG(INFO) << "PASSED";
+                              }
+                              else {
+                                  LOG(INFO) << "FAILED";
+                              }
                           });
     });
 }
