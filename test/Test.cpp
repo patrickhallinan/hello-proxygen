@@ -47,10 +47,7 @@ Test::Test(folly::EventBase& eventBase)
 
 
 void Test::run() {
-    HttpClient* http_client = httpClient_.get();
-
-    // XXX: We sometimes crash if this is called after the event loop is started!
-    eventBase_.runInEventBaseThread([httpClient=http_client]() {
+    eventBase_.runInEventBaseThread([httpClient=httpClient_.get()]() {
 
         static bool passed;
 
@@ -85,6 +82,7 @@ void Test::run() {
 
                               assert_equal(response.content(), "CONTENT MISSING");
                           })
+
                           .thenError(folly::tag_t<std::exception>{}, [](const std::exception& e) {
                               passed = false;
                               LOG(INFO) << e.what();

@@ -37,6 +37,7 @@ void TransactionHandler::onEOM() noexcept {
     std::string body = inputBuf_->moveToFbString().toStdString();
     HttpResponse httpResponse{response_->getStatusCode(), std::move(body)};
 
+    // FIXME: onError() can be called after onEOM()
     httpClient_->requestComplete(std::move(httpResponse));
 }
 
