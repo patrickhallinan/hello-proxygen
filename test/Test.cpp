@@ -7,9 +7,9 @@
 
 #include <proxygen/lib/utils/WheelTimerInstance.h>
 
-//#include <fmt/core.h>
 #include <chrono>
 #include <source_location>
+
 
 DECLARE_string(hello_host);
 DECLARE_int32(hello_port);

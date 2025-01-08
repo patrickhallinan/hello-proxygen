@@ -31,12 +31,12 @@ public:
 };
 
 
-// TODO: make a simple HttpClient
-// move to .cpp
+// TODO: make a simpler HttpClient and move this to .cpp
 class HttpClient : public proxygen::HTTPConnector::Callback {
     friend class TransactionHandler;
 
 public:
+    // TODO: Replace url with host/port and put path in GET()/POST()
     HttpClient(folly::EventBase*,
                std::chrono::milliseconds timeout,
                const proxygen::HTTPHeaders&,
@@ -48,8 +48,7 @@ public:
     folly::Future<HttpResponse> GET();
     folly::Future<HttpResponse> POST(const std::string& content);
 
-    // initial SSL related structures
-    // rely on gflags
+    // XXX: should these arguments be gflags?
     void initializeSsl(const std::string& caPath,
                        const std::string& nextProtos,
                        const std::string& certPath = "",
@@ -61,6 +60,7 @@ protected:
     void connectSuccess(proxygen::HTTPUpstreamSession*) override;
     void connectError(const folly::AsyncSocketException&) override;
 
+    // called from TransactionHandler
     void requestComplete(HttpResponse) noexcept;
     void requestError(const proxygen::HTTPException&) noexcept;
 
