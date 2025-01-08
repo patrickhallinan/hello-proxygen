@@ -13,7 +13,7 @@ proxygen/proxygen/_build/proxygen/httpclient/samples/curl/proxygen_curl  --url=h
 
 === startup
 
-[plantuml, "init-seq.puml", svg]
+[plantuml, "curl-init-seq.puml", svg]
 ----
 hide footbox
 
@@ -55,7 +55,7 @@ main -> EventBase : loop()
 
 === GET
 
-[plantuml, "run-test-seq.puml", svg]
+[plantuml, "curl-get-seq.puml", svg]
 ----
 hide footbox
 
@@ -113,7 +113,7 @@ HTTPTransaction -> CurlClient : detachTransaction()
 
 === class diagram
 
-[plantuml, "classes.puml", svg]
+[plantuml, "curl-classes.puml", svg]
 ----
 class "**AsyncSocket**" as AsyncSocket
 

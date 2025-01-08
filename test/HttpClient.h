@@ -13,19 +13,19 @@
 
 class HttpResponse {
     uint16_t status_;
-    std::string body_;
+    std::string content_;
 public:
-    HttpResponse(uint16_t status, std::string body)
+    HttpResponse(uint16_t status, std::string content)
         : status_{status}
-        , body_(std::move(body))
+        , content_(std::move(content))
     {}
 
     uint16_t status() const {
         return status_;
     }
 
-    std::string body() const {
-        return body_;
+    std::string content() const {
+        return content_;
     }
 };
 

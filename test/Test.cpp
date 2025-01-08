@@ -5,6 +5,10 @@
 #include <folly/io/async/EventBase.h>
 #include <gflags/gflags_declare.h>
 
+#include <proxygen/lib/utils/WheelTimerInstance.h>
+
+//#include <fmt/core.h>
+#include <chrono>
 #include <source_location>
 
 DECLARE_string(hello_host);
@@ -13,6 +17,7 @@ DECLARE_int32(hello_port);
 
 static proxygen::HTTPHeaders httpHeaders();
 
+//using namespace std::chrono_literals;
 
 template<typename T, typename U>
 void assert_equal(T const& a, U const& b,
@@ -28,12 +33,16 @@ void assert_equal(T const& a, U const& b,
 }
 
 
-Test::Test(folly::EventBase& eventBase, proxygen::WheelTimerInstance& timer)
-    : eventBase_{eventBase}
-    , timer_{timer} {
+Test::Test(folly::EventBase& eventBase)
+    : eventBase_{eventBase} {
+
+    auto defaultTimeout = std::chrono::milliseconds(5000);
+
+    // uses HHWheelTimer of the EventBase
+    proxygen::WheelTimerInstance timer{defaultTimeout, &eventBase_};
 
     auto url = fmt::format("http://{}:{}/", FLAGS_hello_host, FLAGS_hello_port);
-    httpClient_ = std::make_unique<HttpClient>(&eventBase_, timer_, httpHeaders(), url);
+    httpClient_ = std::make_unique<HttpClient>(&eventBase_, timer, httpHeaders(), url);
 }
 
 
@@ -54,26 +63,27 @@ void Test::run() {
                               return httpClient->GET();
                           })
                           .thenValue([httpClient](const HttpResponse&& response) {
-                              LOG(INFO) << "Status : " << response.status();
-                              LOG(INFO) << "Body   : " << response.body();
+                              LOG(INFO) << "Status: " << response.status()
+                                  << ", Content: " << response.content();
 
-                              assert_equal(response.body(), "Hello");
+                              assert_equal(response.status(), 200);
+                              assert_equal(response.content(), "Hello");
 
                               return httpClient->POST("Echo");
                           })
                           .thenValue([httpClient](const HttpResponse&& response) {
-                              LOG(INFO) << "Status : " << response.status();
-                              LOG(INFO) << "Body   : " << response.body();
+                              LOG(INFO) << "Status: " << response.status()
+                                  << ", Content: " << response.content();
 
-                              assert_equal(response.body(), "Echo");
+                              assert_equal(response.content(), "Echo");
 
                               return httpClient->POST("");
                           })
                           .thenValue([](const HttpResponse&& response) {
-                              LOG(INFO) << "Status : " << response.status();
-                              LOG(INFO) << "Body   : " << response.body();
+                              LOG(INFO) << "Status: " << response.status()
+                                  << ", Content: " << response.content();
 
-                              assert_equal(response.body(), "CONTENT MISSING");
+                              assert_equal(response.content(), "CONTENT MISSING");
                           })
                           .thenError(folly::tag_t<std::exception>{}, [](const std::exception& e) {
                               passed = false;

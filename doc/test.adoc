@@ -5,10 +5,6 @@ ifeval::["{docdir}" == ""]
 endif::[]
 
 
-= proxygen curl sample: GET request
-
-A little documentation to show how proxygen's curl HTTP client works.
-
 
 == init
 
@@ -41,11 +37,17 @@ participant "**WheelTimerInstance**" as WheelTimerInstance
 
 main -> Init : ctor{ &argc, &argv }
 main -> EventBase : eb=ctor{}
+
 main -> WheelTimerInstance : timer=ctor{ default_timeout }
+
+== VERIFIED !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ==
+
+
 main -> test_h : test(eb, timer)
 test_h -> EventBase : runInEventBaseThread( callback )
 main -> EventBase : loopForever()
 
+/'
 group callback
     EventBase -> test_cpp : callback()
     
@@ -69,7 +71,7 @@ group callback
     test_cpp -> Future : thenValue( response_handler(HttpResponse&&) )
     test_cpp --> EventBase : future
 end group
-
+'/
 'main -> HttpClient : ctor{ eb, HTTPMethod::GET, proxy=nullptr, headers, input_filename, h2c=true )
 'main -> SocketAddress : addr=ctor{ host, port, allowNameLookup=true }
 ----

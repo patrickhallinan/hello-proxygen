@@ -26,8 +26,6 @@ void HelloHandler::onEOM() noexcept {
         LOG(INFO) << content_;
     }
 
-    LOG(INFO) << "";
-
     proxygen::ResponseBuilder(downstream_)
         .status(200, "OK")
         .body("Hello")
