@@ -10,6 +10,7 @@
 
 #include <proxygen/lib/utils/WheelTimerInstance.h>
 
+#include <chrono>
 
 class HttpResponse {
     uint16_t status_;
@@ -37,7 +38,7 @@ class HttpClient : public proxygen::HTTPConnector::Callback {
 
 public:
     HttpClient(folly::EventBase*,
-               proxygen::WheelTimerInstance&,
+               std::chrono::milliseconds timeout,
                const proxygen::HTTPHeaders&,
                const std::string& url);
 
@@ -67,7 +68,6 @@ private:
     proxygen::HTTPMessage headers(proxygen::HTTPMethod, size_t contentLength=0);
 
     folly::EventBase* eb_{nullptr};
-    proxygen::WheelTimerInstance& timer_;
     proxygen::HTTPHeaders headers_;
     proxygen::URL url_;
 
@@ -76,8 +76,6 @@ private:
     proxygen::HTTPTransaction* txn_{nullptr};
 
     folly::SSLContextPtr sslContext_;
-
-    bool egressPaused_{false};
 
     std::unique_ptr<folly::IOBuf> inputBuf_;
 

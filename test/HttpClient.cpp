@@ -25,15 +25,17 @@ DECLARE_int32(recv_window);
 
 
 HttpClient::HttpClient(EventBase* eb,
-                       proxygen::WheelTimerInstance& timer,
+                       std::chrono::milliseconds defaultTimeout,
                        const HTTPHeaders& headers,
                        const std::string& url)
     : eb_{eb}
-    , timer_{timer}
     , headers_{headers}
     , url_{proxygen::URL{url}} {
 
-    httpConnector_ = std::make_unique<proxygen::HTTPConnector>(this, timer_);
+    // uses HHWheelTimer of the EventBase
+    proxygen::WheelTimerInstance timer{defaultTimeout, eb};
+
+    httpConnector_ = std::make_unique<proxygen::HTTPConnector>(this, timer);
 }
 
 

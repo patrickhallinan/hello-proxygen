@@ -17,7 +17,6 @@ DECLARE_int32(hello_port);
 
 static proxygen::HTTPHeaders httpHeaders();
 
-//using namespace std::chrono_literals;
 
 template<typename T, typename U>
 void assert_equal(T const& a, U const& b,
@@ -38,11 +37,12 @@ Test::Test(folly::EventBase& eventBase)
 
     auto defaultTimeout = std::chrono::milliseconds(5000);
 
-    // uses HHWheelTimer of the EventBase
-    proxygen::WheelTimerInstance timer{defaultTimeout, &eventBase_};
-
     auto url = fmt::format("http://{}:{}/", FLAGS_hello_host, FLAGS_hello_port);
-    httpClient_ = std::make_unique<HttpClient>(&eventBase_, timer, httpHeaders(), url);
+
+    httpClient_ = std::make_unique<HttpClient>(&eventBase_,
+                                               defaultTimeout,
+                                               httpHeaders(),
+                                               url);
 }
 
 

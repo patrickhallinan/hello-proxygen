@@ -24,8 +24,7 @@ hide footbox
 participant "**main()**" as main
 participant "**folly::Init**" as Init
 participant "**EventBase**" as EventBase
-participant "**Test.h**" as test_h
-participant "**Test.cpp**" as test_cpp
+participant "**Test**" as test
 participant "**HttpClient**" as HttpClient
 participant "**Future**" as Future
 participant "**WheelTimerInstance**" as WheelTimerInstance
@@ -38,7 +37,18 @@ participant "**WheelTimerInstance**" as WheelTimerInstance
 main -> Init : ctor{ &argc, &argv }
 main -> EventBase : eb=ctor{}
 
-main -> WheelTimerInstance : timer=ctor{ default_timeout }
+
+main -> test : ctor{ eb, timer }
+
+test -> WheelTimerInstance : timer=ctor{ default_timeout }
+test -> HttpClient : ctor{ EventBase, url, headers }
+
+HttpClient -> WheelTimerInstance : timer=ctor{ timeout_ms }
+HttpClient -> HttpConnector : ctor{ this, timer }        
+
+main -> test : run()
+
+main -> EventBase : loop()
 
 == VERIFIED !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ==
 
