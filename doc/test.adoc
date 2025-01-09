@@ -22,12 +22,11 @@ ifeval::["{docdir}" != ""]
 hide footbox
 
 participant "**main()**" as main
-participant "**EventBase**" as EventBase
 participant "**folly::Init**" as Init
 participant "**Test**" as test
-participant "**WheelTimerInstance**" as WheelTimerInstance
-participant "**HTTPConnector**" as HTTPConnector
+participant "**EventBase**" as EventBase
 participant "**HttpClient**" as HttpClient
+participant "**HTTPConnector**" as HTTPConnector
 
 
 main -> Init : ctor{ &argc, &argv }
@@ -35,9 +34,8 @@ main -> EventBase : eb=ctor{}
 
 main -> test : ctor{ eb, timer }
 
-test -> HttpClient : ctor{ EventBase, defaultTimeout, url, headers }
+test -> HttpClient : ctor{\n  EventBase,\n  defaultTimeout,\n  url,\n  headers }
 
-HttpClient -> WheelTimerInstance : timer=ctor{ defaultTimeout }
 HttpClient -> HTTPConnector : ctor{ this, timer }        
 
 main -> test : run()
@@ -158,6 +156,7 @@ class "**EventBase**" as EventBase
 class "**HTTPConnector**\n\nhttp/HTTPConnector.h" as HTTPConnector
 class "**Callback**\n\nhttp/HTTPConnector.h" as Callback
 class "**HTTPTransactionHandler**\n\nhttp/session/HTTPTransaction.h" as HTTPTransactionHandler
+class "**TransactionHandler**\n\n" as TransactionHandler
 class "**HttpClient**" as HttpClient
 
 AsyncSocketTransport <-- AsyncSocket
@@ -165,16 +164,16 @@ AsyncSocketTransport <-- AsyncSocket
 ConnectCallback <- HTTPConnector
 
 Callback <-- HttpClient
-HTTPTransactionHandler <-- HttpClient
-
-TraceEventObserver <-- HTTPTransactionHandler
+HTTPTransactionHandler <-- TransactionHandler
 
 AsyncSocketTransport +-- ConnectCallback
 HTTPConnector +-- Callback
 
-HTTPConnector o-- EventBase
-HTTPConnector o-- HttpClient
+'HTTPConnector o-- EventBase
+HTTPConnector o-- Callback
 HTTPConnector o-- AsyncSocket
+
+TransactionHandler o-- HttpClient
 
 class EventBase {
     loop()
@@ -189,7 +188,7 @@ class HTTPConnector {
     {abstract} preConnect(NetworkSocket /*fd*/)
 
     ----
-    Callback* HttpClient
+    Callback* httpClient
     folly::AsyncTransport::UniquePtr socket_;
     'wangle::TransportInfo transportInfo_;
 }
@@ -199,7 +198,19 @@ class AsyncSocket {
     connect( ConnectCallback, SocketAddress, int timeout)
 }
 
-class HttpClient {
+class TransactionHandler #LightGreen  {
+    {abstract} void setTransaction( HTTPTransaction* txn )
+
+    {abstract}  void detachTransaction() // transaction no longer valid
+
+    {abstract} void onHeadersComplete( unique_ptr<HTTPMessage> )
+    {abstract} void onBody( unique_ptr<folly::IOBuf> chain )
+    {abstract} void onEOM()
+
+    {abstract} void onError( HTTPException )
+}
+
+class HttpClient #LightGreen  {
     {abstract} connectSuccess()
     {abstract} connectErr( AsyncSocketException )
     {abstract} preConnect( NetworkSocket )

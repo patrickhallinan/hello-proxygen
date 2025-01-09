@@ -11,14 +11,17 @@ hide footbox
 participant "**main()**\n\n" as main
 participant "**folly::Init**\n\n" as Init
 participant "**EventBase**\n\n" as EventBase
+participant "**HttpClient**\n\n" as HttpClient
 participant "**WheelTimerInstance**\n\n" as WheelTimerInstance
-participant "**std::thread**\n\n" as thread
-participant "**Test**\n\n" as Test
+participant "**HTTPConnector**\n\n" as HTTPConnector
+
 
 main -> Init : ctor{ &argc, &argv }
 main -> EventBase : eb=ctor{}
 
-main -> WheelTimerInstance : timer=ctor{ defaultTimeout, eb }
+main -> HttpClient : ctor{ EventBase, defaultTimeout, url, headers }
+
+HttpClient -> WheelTimerInstance : timer=ctor{ defaultTimeout, EventBase }
 note right #ff8888
     must create before starting event loop
    
@@ -26,7 +29,20 @@ note right #ff8888
     If an event occurs before a timeout then the timeout callback is removed.
     No race condition is possible since timeout events and all other events
     are serviced from the same thread.
-end note 
+end note
+
+HttpClient -> HTTPConnector : ctor{ this, timer }        
+
+main -> EventBase : runInEventBaseThread( callback )
+
+main -> EventBase : loop()
+
+/'
+main -> Init : ctor{ &argc, &argv }
+main -> EventBase : eb=ctor{}
+
+main -> WheelTimerInstance : timer=ctor{ defaultTimeout, eb }
+ 
 
 main -> thread : ctor{ run_event_loop( &eb ) }
 main -> Test : test=ctor{}
@@ -35,6 +51,7 @@ main -> Test : run()
 note left #ff0000: todo
 
 main -> thread : join()
+'/
 ----
 
 
@@ -280,9 +297,10 @@ class "**HTTPTransaction**\n\nHTTPTransaction.h" as HTTPTransaction
 HTTPSession <- HTTPUpstreamSession
 
 class HttpClient {
-    - Promise connected_
+    - Promise<Unit> connected_
+    - Promise<HttpResponse> requestComplete_
     
-    + Promise **connect**( host, port )
+    + Future<Unit> **connect**( host, port )
     + Future<HttpResponse> **GET**( path )
     + Future<HttpResponse> **POST**( path, content )
 }

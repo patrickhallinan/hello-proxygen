@@ -2,8 +2,6 @@
 
 #include "TransactionHandler.h"
 
-//#include <folly/String.h>
-//#include <folly/portability/GFlags.h>
 #include <proxygen/lib/http/HTTPMessage.h>
 #include <proxygen/lib/http/session/HTTPUpstreamSession.h>
 
@@ -115,8 +113,6 @@ proxygen::HTTPMessage HttpClient::headers(proxygen::HTTPMethod method, size_t co
     }
 
     httpMessage.getHeaders().add(HTTP_HEADER_CONTENT_LENGTH, std::to_string(contentLength));
-
-    httpMessage.dumpMessage(4);
 
     return httpMessage;
 }
