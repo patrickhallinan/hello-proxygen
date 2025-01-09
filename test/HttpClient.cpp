@@ -2,16 +2,9 @@
 
 #include "TransactionHandler.h"
 
-#include <iostream>
-#include <sys/stat.h>
-
-#include <folly/FileUtil.h>
-#include <folly/String.h>
-#include <folly/io/async/SSLContext.h>
-#include <folly/io/async/SSLOptions.h>
-#include <folly/portability/GFlags.h>
+//#include <folly/String.h>
+//#include <folly/portability/GFlags.h>
 #include <proxygen/lib/http/HTTPMessage.h>
-#include <proxygen/lib/http/codec/HTTP2Codec.h>
 #include <proxygen/lib/http/session/HTTPUpstreamSession.h>
 
 #include <proxygen/lib/http/HTTPConnector.h>
@@ -45,9 +38,6 @@ folly::Future<folly::Unit> HttpClient::connect() {
 
     static const folly::SocketOptionMap socketOptions{{{SOL_SOCKET, SO_REUSEADDR}, 1}};
 
-    // XXX: Is WheelTimerInstance BIG?
-    // XXX: Can we create the timer inside HttpClient?
-
     httpConnector_->connect(eb_, socketAddress, std::chrono::milliseconds(500), socketOptions);
 
     connectPromise_.reset(new folly::Promise<folly::Unit>{});
@@ -80,54 +70,9 @@ folly::Future<HttpResponse> HttpClient::POST(const std::string& content) {
 }
 
 
-void HttpClient::initializeSsl(const string& caPath,
-                               const string& nextProtos,
-                               const string& certPath,
-                               const string& keyPath) {
-
-    sslContext_ = std::make_shared<folly::SSLContext>();
-    sslContext_->setOptions(SSL_OP_NO_COMPRESSION);
-    sslContext_->setCipherList(folly::ssl::SSLCommonOptions::ciphers());
-
-    if (!caPath.empty()) {
-        sslContext_->loadTrustedCertificates(caPath.c_str());
-    }
-
-    if (!certPath.empty() && !keyPath.empty()) {
-        sslContext_->loadCertKeyPairFromFiles(certPath.c_str(), keyPath.c_str());
-    }
-
-    list<string> nextProtoList;
-    folly::splitTo<string>(
-      ',', nextProtos, std::inserter(nextProtoList, nextProtoList.begin()));
-    sslContext_->setAdvertisedNextProtocols(nextProtoList);
-}
-
-
-void HttpClient::sslHandshakeFollowup(HTTPUpstreamSession* session) noexcept {
-
-    AsyncSSLSocket* sslSocket =
-        dynamic_cast<AsyncSSLSocket*>(session->getTransport());
-
-    const unsigned char* nextProto = nullptr;
-    unsigned nextProtoLength = 0;
-    sslSocket->getSelectedNextProtocol(&nextProto, &nextProtoLength);
-    if (nextProto) {
-        VLOG(1) << "Client selected next protocol "
-              << string((const char*)nextProto, nextProtoLength);
-    } else {
-        VLOG(1) << "Client did not select a next protocol";
-    }
-
-  // Note: This ssl session can be used by defining a member and setting
-  // something like sslSession_ = sslSocket->getSSLSession() and then
-  // passing it to the connector::connectSSL() method
-}
-
-
 void HttpClient::connectSuccess(HTTPUpstreamSession* session) {
     if (url_.isSecure()) {
-        sslHandshakeFollowup(session);
+        // TODO: sslHandshakeFollowup(session);
     }
 
     session_ = session;

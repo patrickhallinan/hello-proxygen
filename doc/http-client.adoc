@@ -4,7 +4,7 @@
 
 === startup
 
-[plantuml, "init-seq.puml", svg]
+[plantuml, "http-client-init-seq.puml", svg]
 ----
 hide footbox
 
@@ -38,63 +38,11 @@ main -> thread : join()
 ----
 
 
-=== test
-
-[plantuml, "run-test-seq.puml", svg]
-----
-hide footbox
-
-participant "**EventBase**\n\n" as EventBase
-participant "**Test**\n\n" as Test
-participant "**HttpClient**\n\n" as HttpClient
-participant "**Future**\n\n" as Future
-participant "**HttpConnector**\n\n" as HttpConnector
-participant "**SocketAddress**\n\n" as SocketAddress
-participant "**HTTPUpstreamSession**\n\n" as HTTPUpstreamSession
-
--> Test : run()
-Test -> HttpClient : ctor{ EventBase, timer, url, headers }
-
-HttpClient -> HttpConnector : ctor{ this, timer }
-
-Test -> HttpClient : POST( "nacho" )
-
-HttpClient -> SocketAddress : addr=ctor{ Host, Port, allowNameLookup=true }
-HttpClient -> HttpConnector : connect( EventBase, addr, ... )
-
-group connect success
-    EventBase -> HttpClient : connectSuccess( HTTPUpstreamSession )
-    HttpClient -> HTTPUpstreamSession : setFlowControl( 65536, 65536, 65536 )
-    note left: set receive buffer sizes, strange name?
-    
-    HttpClient -> TransactionHandler : txnHandler=ctor{ this }
-    
-    HttpClient -> HTTPUpstreamSession : txn=newTransaction( txnHandler )
-    'HTTPUpstreamSession -> HTTPUpstreamSession : newTransactionWithError( txnHandler )
-    'HTTPUpstreamSession -> HTTPUpstreamSession : startNow()
-    'HTTPUpstreamSession -> HTTPSession : startNow()    
-    'HTTPUpstreamSession -> HTTPSession : createTransaction()
-    
-    HttpClient -> HttpClient : setupHeaders()
-    note left: create HTTPMessage 
-    
-    HttpClient -> HTTPTransaction : sendHeaders( HTTPMessage )
-    HttpClient -> HTTPTransaction : sendEOM()
-    
-end group
-
-HttpClient --> Test : Future
-Test -> Future : thenValue( HttpResponseHandler )
-
-== post ==
- 
-----
-
 
 
 === original
 
-[plantuml, "original-seq.puml", svg]
+[plantuml, "http-client-original-seq.puml", svg]
 ----
 hide footbox
 
@@ -179,6 +127,138 @@ Fail --> [*]
 Error --> [*]
 
 ----
+
+
+
+== http client connect
+
+// github
+ifeval::["{docdir}" == ""]
+image::http-client-connect_puml.png[]
+endif::[]
+
+
+// eclipse asciidoc plugin
+ifeval::["{docdir}" != ""]
+
+[plantuml, "http-client-connect.puml", svg]
+----
+hide footbox
+
+participant "**EventBase**" as EventBase
+participant "**Test.cpp**" as test_cpp
+participant "**HttpClient**" as HttpClient
+participant "**HttpConnector**" as HttpConnector
+participant "**Future**" as Future
+participant "**SocketAddress**" as SocketAddress
+participant "**SocketOptionMap**" as SocketOptionMap
+
+'participant "**URL**" as URL
+
+group callback
+    EventBase -> test_cpp : callback()
+    
+    group HttpClient ctor
+        test_cpp -> HttpClient : ctor{ EventBase, url, headers }
+        HttpClient -> HttpConnector : ctor{ this, timer }        
+    end group
+
+    group HttpClient.POST()
+        test_cpp -> HttpClient : POST("nacho")
+        HttpClient -> SocketAddress : addr=ctor{}
+        
+        HttpClient -> SocketOptionMap : options=ctor{}
+        note left: static initialization
+        
+        HttpClient -> HttpConnector : connect( eb_, socketAddress, timeout, options )
+    end group
+    
+    HttpClient --> test_cpp : future
+    test_cpp -> Future : thenValue( response_handler(HttpResponse&&) )
+    test_cpp --> EventBase : future
+end group
+
+'main -> HttpClient : ctor{ eb, HTTPMethod::GET, proxy=nullptr, headers, input_filename, h2c=true )
+'main -> SocketAddress : addr=ctor{ host, port, allowNameLookup=true }
+----
+
+endif::[]
+
+
+== http get detail
+
+
+// for github
+ifeval::["{docdir}" == ""]
+image::http-get_puml.png[]
+endif::[]
+
+
+// for eclipse asciidoc plugin
+ifeval::["{docdir}" != ""]
+
+
+[plantuml, "http-get.puml", svg]
+----
+
+participant "**main()**" as main
+participant "**HttpClient**" as HttpClient
+participant "**EventBase**" as EventBase
+participant "**AsyncSocket**" as AsyncSocket
+participant "**HTTPConnector**" as HTTPConnector
+participant "**HTTPUpstreamSession**" as HTTPUpstreamSession
+participant "**HTTPTransaction**" as HTTPTransaction
+
+
+main -> HTTPConnector : connector=ctor{ &HttpClient, WheelTimer{ request_timeout, &eb } }
+main -> HTTPConnector : connect( &eb, addr, connect_timeout, socket_options )
+main -> EventBase : loop()
+note right
+  This is the event loop. All events are run in this thread
+end note
+
+HTTPConnector -> AsyncSocket : sock=ctor{ eventBase }
+HTTPConnector -> HttpClient : preConnect( sock )
+HTTPConnector -> AsyncSocket : connect(this, ... )
+AsyncSocket -> HTTPConnector : preConnect( NetworkSocket )
+
+== sends request on connect success event ==
+
+AsyncSocket -> HTTPConnector : connectSuccess()
+HTTPConnector -> HttpClient : connectSuccess( HTTPUpstreamSession session )
+
+HttpClient -> HTTPUpstreamSession : setFlowControl( **...** )
+HttpClient -> HTTPUpstreamSession : txn=newTransaction( this )
+HttpClient <- HttpClient : sendRequest( txn )
+
+group send request
+    HttpClient -> HttpClient : setupHeaders()
+    HttpClient -> HTTPTransaction : sendHeaders( /*proxygen::HTTPMessage*/ request_ )
+    HttpClient -> HTTPTransaction : sendEOM() // end of message
+end group
+
+HttpClient -> HTTPUpstreamSession : closeWhenIdle()
+
+== response events ==
+
+HTTPTransaction -> HttpClient : onHeadersComplete( unique_ptr<proxygen::HTTPMessage> )
+
+HTTPTransaction -> HttpClient : onBody( unique_ptr<folly::IOBuf> )
+note left
+    called repeatedly until
+    message is complete
+end note
+
+HTTPTransaction -> HttpClient : onEOM()
+note across
+    **NOTE:** HttpClient::onError() can be called between HttpClient::onEOM() and HttpClient::detachTransaction()
+end note
+
+HTTPTransaction -> HttpClient : detachTransaction()
+----
+
+endif::[]
+
 
 
 === class diagram

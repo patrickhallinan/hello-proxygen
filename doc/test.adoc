@@ -22,21 +22,16 @@ ifeval::["{docdir}" != ""]
 hide footbox
 
 participant "**main()**" as main
-participant "**folly::Init**" as Init
 participant "**EventBase**" as EventBase
+participant "**folly::Init**" as Init
 participant "**Test**" as test
-participant "**HttpClient**" as HttpClient
 participant "**WheelTimerInstance**" as WheelTimerInstance
 participant "**HTTPConnector**" as HTTPConnector
-'participant "**SocketAddress**" as SocketAddress
+participant "**HttpClient**" as HttpClient
 
-'participant "**URL**" as URL
-
-== setup ==
 
 main -> Init : ctor{ &argc, &argv }
 main -> EventBase : eb=ctor{}
-
 
 main -> test : ctor{ eb, timer }
 
@@ -47,177 +42,93 @@ HttpClient -> HTTPConnector : ctor{ this, timer }
 
 main -> test : run()
 
-test -> EventBase : runInEventBaseThread( test_callback )
+test -> EventBase : runInEventBaseThread( callback )
 
 main -> EventBase : loop()
-
-/'
-
-== VERIFIED !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ==
-
-
-main -> test_h : test(eb, timer)
-test_h -> EventBase : runInEventBaseThread( callback )
-main -> EventBase : loopForever()
-
-group callback
-    EventBase -> test_cpp : callback()
-    
-    group HttpClient ctor
-        test_cpp -> HttpClient : ctor{ EventBase, url, headers }
-        HttpClient -> WheelTimerInstance : timer=ctor{ timeout_ms }
-        HttpClient -> HttpConnector : ctor{ this, timer }        
-    end group
-
-    group HttpClient.POST()
-        test_cpp -> HttpClient : POST("nacho")
-        HttpClient -> SocketAddress : addr=ctor{}
-        
-        HttpClient -> SocketOptionMap : options=ctor{}
-        note left: static initialization
-        
-        HttpClient -> HttpConnector : connect( eb_, socketAddress, std::chrono::milliseconds(500), options )
-    end group
-    
-    HttpClient --> test_cpp : future
-    test_cpp -> Future : thenValue( response_handler(HttpResponse&&) )
-    test_cpp --> EventBase : future
-end group
-'/
-'main -> HttpClient : ctor{ eb, HTTPMethod::GET, proxy=nullptr, headers, input_filename, h2c=true )
-'main -> SocketAddress : addr=ctor{ host, port, allowNameLookup=true }
 ----
 
 endif::[]
 
-== http client connect
 
-// github
-ifeval::["{docdir}" == ""]
-image::http-client-connect_puml.png[]
-endif::[]
+== test ==
 
-
-// eclipse asciidoc plugin
-ifeval::["{docdir}" != ""]
-
-[plantuml, "http-client-connect.puml", svg]
+[plantuml, "test.puml", svg]
 ----
 hide footbox
 
 participant "**EventBase**" as EventBase
-participant "**Test.cpp**" as test_cpp
 participant "**HttpClient**" as HttpClient
-participant "**HttpConnector**" as HttpConnector
-participant "**Future**" as Future
-participant "**SocketAddress**" as SocketAddress
-participant "**SocketOptionMap**" as SocketOptionMap
-
-'participant "**URL**" as URL
-
-group callback
-    EventBase -> test_cpp : callback()
-    
-    group HttpClient ctor
-        test_cpp -> HttpClient : ctor{ EventBase, url, headers }
-        HttpClient -> HttpConnector : ctor{ this, timer }        
-    end group
-
-    group HttpClient.POST()
-        test_cpp -> HttpClient : POST("nacho")
-        HttpClient -> SocketAddress : addr=ctor{}
-        
-        HttpClient -> SocketOptionMap : options=ctor{}
-        note left: static initialization
-        
-        HttpClient -> HttpConnector : connect( eb_, socketAddress, timeout, options )
-    end group
-    
-    HttpClient --> test_cpp : future
-    test_cpp -> Future : thenValue( response_handler(HttpResponse&&) )
-    test_cpp --> EventBase : future
-end group
-
-'main -> HttpClient : ctor{ eb, HTTPMethod::GET, proxy=nullptr, headers, input_filename, h2c=true )
-'main -> SocketAddress : addr=ctor{ host, port, allowNameLookup=true }
-----
-
-endif::[]
-
-
-== http get
-
-
-// for github
-ifeval::["{docdir}" == ""]
-image::http-get_puml.png[]
-endif::[]
-
-
-// for eclipse asciidoc plugin
-ifeval::["{docdir}" != ""]
-
-
-[plantuml, "http-get.puml", svg]
-----
-
-participant "**main()**" as main
-participant "**HttpClient**" as HttpClient
-participant "**EventBase**" as EventBase
-participant "**AsyncSocket**" as AsyncSocket
-participant "**HTTPConnector**" as HTTPConnector
+participant "**Promise**" as Promise
+participant "**Test**" as test
+participant "**TransactionHandler**" as TransactionHandler
 participant "**HTTPUpstreamSession**" as HTTPUpstreamSession
 participant "**HTTPTransaction**" as HTTPTransaction
+participant "**HTTPConnector**" as HTTPConnector
 
 
-main -> HTTPConnector : connector=ctor{ &HttpClient, WheelTimer{ request_timeout, &eb } }
-main -> HTTPConnector : connect( &eb, addr, connect_timeout, socket_options )
-main -> EventBase : loop()
-note right
-  This is the event loop. All events are run in this thread
-end note
+EventBase -> test : callback()
+test -> HttpClient : connect()
 
-HTTPConnector -> AsyncSocket : sock=ctor{ eventBase }
-HTTPConnector -> HttpClient : preConnect( sock )
-HTTPConnector -> AsyncSocket : connect(this, ... )
-AsyncSocket -> HTTPConnector : preConnect( NetworkSocket )
+HttpClient -> HTTPConnector : connect( EventBase, socketAddress, timeout, SocketOptionMap )
+HttpClient -> Promise : ctor{}
+HttpClient -> Promise : getFuture()
+HttpClient --> test : Future
 
-== sends request on connect success event ==
+== connect success ==
 
-AsyncSocket -> HTTPConnector : connectSuccess()
-HTTPConnector -> HttpClient : connectSuccess( HTTPUpstreamSession session )
+HTTPConnector -> HttpClient : connectSuccess( HTTPUpstreamSession )
+HttpClient -> Promise : setValue()
 
-HttpClient -> HTTPUpstreamSession : setFlowControl( **...** )
-HttpClient -> HTTPUpstreamSession : txn=newTransaction( this )
-HttpClient <- HttpClient : sendRequest( txn )
+== .thenValue() ==
 
-group send request
-    HttpClient -> HttpClient : setupHeaders()
-    HttpClient -> HTTPTransaction : sendHeaders( /*proxygen::HTTPMessage*/ request_ )
-    HttpClient -> HTTPTransaction : sendEOM() // end of message
-end group
+EventBase -> test : callback()
+test -> HttpClient : GET()
+HttpClient -> TransactionHandler : txnHandler=ctor{ this }
+HttpClient -> HTTPUpstreamSession : newTransaction( txnHandler )
+HttpClient -> HttpClient : http_message=headers( GET )
+HttpClient -> HTTPTransaction : sendHeaders( http_message )
+HttpClient -> HTTPTransaction : sendEOM()
 
-HttpClient -> HTTPUpstreamSession : closeWhenIdle()
+HttpClient --> test : Future
 
-== response events ==
+== GET response ==
 
-HTTPTransaction -> HttpClient : onHeadersComplete( unique_ptr<proxygen::HTTPMessage> )
+HTTPTransaction -> TransactionHandler : 
 
-HTTPTransaction -> HttpClient : onBody( unique_ptr<folly::IOBuf> )
+HTTPTransaction -> TransactionHandler : onHeadersComplete( unique_ptr<proxygen::HTTPMessage> )
+
+HTTPTransaction -> TransactionHandler : onBody( unique_ptr<folly::IOBuf> )
 note left
     called repeatedly until
     message is complete
 end note
 
-HTTPTransaction -> HttpClient : onEOM()
+HTTPTransaction -> TransactionHandler : onEOM()
 note across
-    **NOTE:** HttpClient::onError() can be called between HttpClient::onEOM() and HttpClient::detachTransaction()
+    **NOTE:** TransactionHandler::onError() can be called between TransactionHandler::onEOM() and TransactionHandler::detachTransaction()
 end note
 
-HTTPTransaction -> HttpClient : detachTransaction()
-----
+TransactionHandler -> HttpClient : requestComplete( httpResponse )
+HttpClient -> Promise : setValue( httpResponse )
 
-endif::[]
+HTTPTransaction -> TransactionHandler : detachTransaction()
+
+== .thenValue() ==
+
+EventBase -> test : callback( HttpResponse )
+
+test -> HttpClient : POST( "Echo" )
+HttpClient -> TransactionHandler : txnHandler=ctor{ this }
+HttpClient -> HTTPUpstreamSession : newTransaction( txnHandler )
+HttpClient -> HttpClient : http_message=headers( GET )
+HttpClient -> HTTPTransaction : sendHeaders( http_message )
+HttpClient -> HTTPTransaction : sendBody( content )
+HttpClient -> HTTPTransaction : sendEOM()
+
+HttpClient --> test : Future
+
+== etc... ==
+----
 
 
 == classes
@@ -337,6 +248,7 @@ folly::EventBaseManager::get()->getEventBase();
 
 == some useful headers
 
+----
 folly/SocketAddress.h
 proxygen/lib/http/HTTPHeaders.h
 proxygen/lib/utils/URL.h
@@ -345,3 +257,4 @@ proxygen/lib/http/HTTPMethod.h +
 proxygen/lib/utils/WheelTimerInstance.h
 
 _build/generated/proxygen/lib/http/HTTPCommonHeaders.h
+----

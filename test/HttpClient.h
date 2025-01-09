@@ -48,12 +48,7 @@ public:
     folly::Future<HttpResponse> GET();
     folly::Future<HttpResponse> POST(const std::string& content);
 
-    // XXX: should these arguments be gflags?
-    void initializeSsl(const std::string& caPath,
-                       const std::string& nextProtos,
-                       const std::string& certPath = "",
-                       const std::string& keyPath = "");
-    void sslHandshakeFollowup(proxygen::HTTPUpstreamSession* session) noexcept;
+    // TODO: Implement https
 
 protected:
     // proxygen::HTTPConnector::Callback
@@ -74,8 +69,6 @@ private:
     proxygen::HTTPUpstreamSession* session_;
 
     proxygen::HTTPTransaction* txn_{nullptr};
-
-    folly::SSLContextPtr sslContext_;
 
     std::unique_ptr<folly::IOBuf> inputBuf_;
 
