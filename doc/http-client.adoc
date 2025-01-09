@@ -1,8 +1,35 @@
 = http-client
 
+== how should it work?
+
+
+[source, c++]
+----
+void main() {
+    // ...
+    eventBase.runInEventBaseThread([&]() {
+    
+        httpClient.connect( host, port, /*isSecure=*/false )
+                  .thenValue([&]( Unit ) {
+                      return httpClient.POST("/some/path", "content");
+                  })
+                  .thenValue([]( HttpResponse response ) {
+                      // ...
+                  })
+                  .thenError([](const std::exception& e) {
+                      // ...
+                  });
+    });
+              
+    eventBase.loop()
+}
+----
+
+
 == uml
 
-=== startup
+
+=== create
 
 [plantuml, "http-client-init-seq.puml", svg]
 ----
@@ -23,7 +50,7 @@ main -> HttpClient : ctor{ EventBase, defaultTimeout, url, headers }
 
 HttpClient -> WheelTimerInstance : timer=ctor{ defaultTimeout, EventBase }
 note right #ff8888
-    must create before starting event loop
+    must create before starting event loop or in the event loop thread
    
     Event handlers with timeout callbacks are registered with the timer.
     If an event occurs before a timeout then the timeout callback is removed.
@@ -33,176 +60,54 @@ end note
 
 HttpClient -> HTTPConnector : ctor{ this, timer }        
 
-main -> EventBase : runInEventBaseThread( callback )
-
-main -> EventBase : loop()
-
-/'
-main -> Init : ctor{ &argc, &argv }
-main -> EventBase : eb=ctor{}
-
-main -> WheelTimerInstance : timer=ctor{ defaultTimeout, eb }
- 
-
-main -> thread : ctor{ run_event_loop( &eb ) }
-main -> Test : test=ctor{}
-
-main -> Test : run()
-note left #ff0000: todo
-
-main -> thread : join()
-'/
 ----
 
 
+=== connect
 
-
-=== original
-
-[plantuml, "http-client-original-seq.puml", svg]
+[plantuml, "http-client-connect-seq.puml", svg]
 ----
 hide footbox
 
-participant "**EventBase**\n\n" as EventBase
-participant "**Test**\n\n" as Test
+participant "**AsyncSocket**\n\n" as AsyncSocket
 participant "**HttpClient**\n\n" as HttpClient
-participant "**Future**\n\n" as Future
-participant "**HttpConnector**\n\n" as HttpConnector
+participant "**Promise**\n\n" as Promise
+participant "**HTTPConnector**\n\n" as HTTPConnector
 participant "**SocketAddress**\n\n" as SocketAddress
 participant "**HTTPUpstreamSession**\n\n" as HTTPUpstreamSession
 
--> Test : run()
-Test -> HttpClient : ctor{ EventBase, timer, url, headers }
 
-HttpClient -> HttpConnector : ctor{ this, timer }
 
-Test -> HttpClient : POST( "nacho" )
+-> HttpClient : connect()
 
 HttpClient -> SocketAddress : addr=ctor{ Host, Port, allowNameLookup=true }
-HttpClient -> HttpConnector : connect( EventBase, addr, ... )
+HttpClient -> HTTPConnector : connect( &eb, addr, connect_timeout, socket_options )
+HttpClient -> Promise : getFuture()
+<-- HttpClient : Future
 
-group connect success
-    EventBase -> HttpClient : connectSuccess( HTTPUpstreamSession )
-    HttpClient -> HTTPUpstreamSession : setFlowControl( 65536, 65536, 65536 )
-    note left: set receive buffer sizes, strange name?
-    
-    HttpClient -> TransactionHandler : txnHandler=ctor{ this }
-    
-    HttpClient -> HTTPUpstreamSession : txn=newTransaction( txnHandler )
-    'HTTPUpstreamSession -> HTTPUpstreamSession : newTransactionWithError( txnHandler )
-    'HTTPUpstreamSession -> HTTPUpstreamSession : startNow()
-    'HTTPUpstreamSession -> HTTPSession : startNow()    
-    'HTTPUpstreamSession -> HTTPSession : createTransaction()
-    
-    HttpClient -> HttpClient : setupHeaders()
-    note left: create HTTPMessage 
-    
-    HttpClient -> HTTPTransaction : sendHeaders( HTTPMessage )
-    HttpClient -> HTTPTransaction : sendEOM()
-    
-end group
+HTTPConnector -> AsyncSocket : sock=ctor{ eventBase }
+HTTPConnector -> HttpClient : preConnect( sock )
+HTTPConnector -> AsyncSocket : connect(this, ... )
+AsyncSocket -> HTTPConnector : preConnect( NetworkSocket )
 
-HttpClient --> Test : Future
-Test -> Future : thenValue( HttpResponseHandler )
+== connect success ==
 
-== post ==
- 
+AsyncSocket -> HTTPConnector : connectSuccess()
+HTTPConnector -> HttpClient : connectSuccess( HTTPUpstreamSession session )
+
+HttpClient -> HTTPUpstreamSession : setFlowControl( **...** )
+note left: set receive buffer sizes
+
+HttpClient -> Promise : setValue()
+
+== connect error ==
+
+AsyncSocket -> HTTPConnector : connectErr( AsyncSocketException )
+HTTPConnector -> HttpClient : connectError( AsyncSocketException )
+HttpClient -> Promise : setException( AsyncSocketException ) 
 ----
 
-=== how should it work?
-
-
-
-[source, c++]
-----
-void Test::run() {
-    httpClient.connect( address )
-              .thenValue([]() {
-                  return run_tests();
-              })
-              .thenError([]() {
-                  // How to distinguish fail vs. error?
-              });
-}
-----
-
-
-[plantuml, "state.puml", svg]
-----
-[*] --> Setup
-Setup --> TestStep
-Setup --> Error
-TestStep --> Error
-TestStep --> Fail
-TestStep --> Pass
-
-'State1 : this is another string
-
-Pass --> Setup
-Pass --> [*]
-Fail --> [*]
-Error --> [*]
-
-----
-
-
-
-== http client connect
-
-// github
-ifeval::["{docdir}" == ""]
-image::http-client-connect_puml.png[]
-endif::[]
-
-
-// eclipse asciidoc plugin
-ifeval::["{docdir}" != ""]
-
-[plantuml, "http-client-connect.puml", svg]
-----
-hide footbox
-
-participant "**EventBase**" as EventBase
-participant "**Test.cpp**" as test_cpp
-participant "**HttpClient**" as HttpClient
-participant "**HttpConnector**" as HttpConnector
-participant "**Future**" as Future
-participant "**SocketAddress**" as SocketAddress
-participant "**SocketOptionMap**" as SocketOptionMap
-
-'participant "**URL**" as URL
-
-group callback
-    EventBase -> test_cpp : callback()
-    
-    group HttpClient ctor
-        test_cpp -> HttpClient : ctor{ EventBase, url, headers }
-        HttpClient -> HttpConnector : ctor{ this, timer }        
-    end group
-
-    group HttpClient.POST()
-        test_cpp -> HttpClient : POST("nacho")
-        HttpClient -> SocketAddress : addr=ctor{}
-        
-        HttpClient -> SocketOptionMap : options=ctor{}
-        note left: static initialization
-        
-        HttpClient -> HttpConnector : connect( eb_, socketAddress, timeout, options )
-    end group
-    
-    HttpClient --> test_cpp : future
-    test_cpp -> Future : thenValue( response_handler(HttpResponse&&) )
-    test_cpp --> EventBase : future
-end group
-
-'main -> HttpClient : ctor{ eb, HTTPMethod::GET, proxy=nullptr, headers, input_filename, h2c=true )
-'main -> SocketAddress : addr=ctor{ host, port, allowNameLookup=true }
-----
-
-endif::[]
-
-
-== http get detail
+== POST
 
 
 // for github
@@ -215,67 +120,56 @@ endif::[]
 ifeval::["{docdir}" != ""]
 
 
-[plantuml, "http-get.puml", svg]
+[plantuml, "http-client-get.puml", svg]
 ----
 
-participant "**main()**" as main
 participant "**HttpClient**" as HttpClient
-participant "**EventBase**" as EventBase
 participant "**AsyncSocket**" as AsyncSocket
+participant "**TransactionHandler**" as TransactionHandler
 participant "**HTTPConnector**" as HTTPConnector
 participant "**HTTPUpstreamSession**" as HTTPUpstreamSession
 participant "**HTTPTransaction**" as HTTPTransaction
 
 
-main -> HTTPConnector : connector=ctor{ &HttpClient, WheelTimer{ request_timeout, &eb } }
-main -> HTTPConnector : connect( &eb, addr, connect_timeout, socket_options )
-main -> EventBase : loop()
-note right
-  This is the event loop. All events are run in this thread
-end note
-
-HTTPConnector -> AsyncSocket : sock=ctor{ eventBase }
-HTTPConnector -> HttpClient : preConnect( sock )
-HTTPConnector -> AsyncSocket : connect(this, ... )
-AsyncSocket -> HTTPConnector : preConnect( NetworkSocket )
-
-== sends request on connect success event ==
-
-AsyncSocket -> HTTPConnector : connectSuccess()
-HTTPConnector -> HttpClient : connectSuccess( HTTPUpstreamSession session )
-
-HttpClient -> HTTPUpstreamSession : setFlowControl( **...** )
+-> HttpClient : POST( "content" )
 HttpClient -> HTTPUpstreamSession : txn=newTransaction( this )
+HTTPUpstreamSession -> HTTPUpstreamSession : newTransactionWithError( txnHandler )
+HTTPUpstreamSession -> HTTPUpstreamSession : startNow()
+HTTPUpstreamSession -> HTTPUpstreamSession : HTTPSession::startNow()    
+HTTPUpstreamSession -> HTTPUpstreamSession : HTTPSession::createTransaction()
+HTTPUpstreamSession --> HttpClient : HTTPTransaction
+
 HttpClient <- HttpClient : sendRequest( txn )
 
 group send request
-    HttpClient -> HttpClient : setupHeaders()
-    HttpClient -> HTTPTransaction : sendHeaders( /*proxygen::HTTPMessage*/ request_ )
+    HttpClient -> HttpClient : request=createHttpMessage()
+    HttpClient -> HTTPTransaction : sendHeaders( /*proxygen::HTTPMessage*/ request )
+    HttpClient -> HTTPTransaction : sendBody( content )
     HttpClient -> HTTPTransaction : sendEOM() // end of message
 end group
 
-HttpClient -> HTTPUpstreamSession : closeWhenIdle()
+<- HttpClient : Future<HttpResponse>
+
 
 == response events ==
 
-HTTPTransaction -> HttpClient : onHeadersComplete( unique_ptr<proxygen::HTTPMessage> )
+HTTPTransaction -> TransactionHandler : onHeadersComplete( unique_ptr<proxygen::HTTPMessage> )
 
-HTTPTransaction -> HttpClient : onBody( unique_ptr<folly::IOBuf> )
+HTTPTransaction -> TransactionHandler : onBody( unique_ptr<folly::IOBuf> )
 note left
     called repeatedly until
     message is complete
 end note
 
-HTTPTransaction -> HttpClient : onEOM()
+HTTPTransaction -> TransactionHandler : onEOM()
 note across
     **NOTE:** HttpClient::onError() can be called between HttpClient::onEOM() and HttpClient::detachTransaction()
 end note
 
-HTTPTransaction -> HttpClient : detachTransaction()
+HTTPTransaction -> TransactionHandler : detachTransaction()
 ----
 
 endif::[]
-
 
 
 === class diagram

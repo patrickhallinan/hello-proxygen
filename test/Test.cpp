@@ -87,7 +87,7 @@ void Test::run() {
                               passed = false;
                               LOG(INFO) << e.what();
                           })
-                          .thenValue([](folly::Unit) {
+                          .thenValue([httpClient](folly::Unit) {
                               if (passed) {
                                   LOG(INFO) << "PASSED";
                               }

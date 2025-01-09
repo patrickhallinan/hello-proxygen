@@ -45,6 +45,7 @@ public:
     virtual ~HttpClient() = default;
 
     folly::Future<folly::Unit> connect();
+
     folly::Future<HttpResponse> GET();
     folly::Future<HttpResponse> POST(const std::string& content);
 
@@ -60,7 +61,7 @@ protected:
     void requestError(const proxygen::HTTPException&) noexcept;
 
 private:
-    proxygen::HTTPMessage headers(proxygen::HTTPMethod, size_t contentLength=0);
+    proxygen::HTTPMessage createHttpMessage(proxygen::HTTPMethod, size_t contentLength=0);
 
     folly::EventBase* eb_{nullptr};
     proxygen::HTTPHeaders headers_;

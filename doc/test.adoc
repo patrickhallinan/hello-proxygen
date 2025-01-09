@@ -83,7 +83,7 @@ EventBase -> test : callback()
 test -> HttpClient : GET()
 HttpClient -> TransactionHandler : txnHandler=ctor{ this }
 HttpClient -> HTTPUpstreamSession : newTransaction( txnHandler )
-HttpClient -> HttpClient : http_message=headers( GET )
+HttpClient -> HttpClient : http_message=createHttpMessage( GET )
 HttpClient -> HTTPTransaction : sendHeaders( http_message )
 HttpClient -> HTTPTransaction : sendEOM()
 
@@ -118,7 +118,7 @@ EventBase -> test : callback( HttpResponse )
 test -> HttpClient : POST( "Echo" )
 HttpClient -> TransactionHandler : txnHandler=ctor{ this }
 HttpClient -> HTTPUpstreamSession : newTransaction( txnHandler )
-HttpClient -> HttpClient : http_message=headers( GET )
+HttpClient -> HttpClient : http_message=createHttpMessage( GET )
 HttpClient -> HTTPTransaction : sendHeaders( http_message )
 HttpClient -> HTTPTransaction : sendBody( content )
 HttpClient -> HTTPTransaction : sendEOM()

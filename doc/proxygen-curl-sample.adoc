@@ -37,14 +37,6 @@ main -> CurlClient : setFlowControlSettings( FLAGS_recv_window )
 main -> SocketAddress : ctor{}
 
 main -> WheelTimerInstance : timer=ctor{ defaultTimeout, eb }
-note right #ff8888
-    must create before starting event loop
-   
-    Event handlers with timeout callbacks are registered with the timer.
-    If an event occurs before a timeout then the timeout callback is removed.
-    No race condition is possible since timeout events and all other events
-    are serviced from the same thread.
-end note 
 
 main -> HTTPConnector : ctor{ curlClient, }
 main -> HTTPConnector : connect( eb, addr, timeout, opts )

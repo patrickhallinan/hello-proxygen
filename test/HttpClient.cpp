@@ -36,6 +36,7 @@ folly::Future<folly::Unit> HttpClient::connect() {
 
     static const folly::SocketOptionMap socketOptions{{{SOL_SOCKET, SO_REUSEADDR}, 1}};
 
+    httpConnector_->reset();
     httpConnector_->connect(eb_, socketAddress, std::chrono::milliseconds(500), socketOptions);
 
     connectPromise_.reset(new folly::Promise<folly::Unit>{});
@@ -47,7 +48,7 @@ folly::Future<HttpResponse> HttpClient::GET() {
     auto transactionHandler = new TransactionHandler{this};
     txn_ = session_->newTransaction(transactionHandler);
 
-    txn_->sendHeaders(headers(proxygen::HTTPMethod::GET));
+    txn_->sendHeaders(createHttpMessage(proxygen::HTTPMethod::GET));
     txn_->sendEOM();
 
     requestPromise_.reset(new folly::Promise<HttpResponse>{});
@@ -59,7 +60,7 @@ folly::Future<HttpResponse> HttpClient::POST(const std::string& content) {
     auto transactionHandler = new TransactionHandler{this};
     txn_ = session_->newTransaction(transactionHandler);
 
-    txn_->sendHeaders(headers(proxygen::HTTPMethod::POST, content.size()));
+    txn_->sendHeaders(createHttpMessage(proxygen::HTTPMethod::POST, content.size()));
     txn_->sendBody(folly::IOBuf::copyBuffer(content));
     txn_->sendEOM();
 
@@ -88,7 +89,8 @@ void HttpClient::connectError(const folly::AsyncSocketException& e) {
 }
 
 
-proxygen::HTTPMessage HttpClient::headers(proxygen::HTTPMethod method, size_t contentLength) {
+proxygen::HTTPMessage HttpClient::createHttpMessage(proxygen::HTTPMethod method,
+                                                    size_t contentLength) {
     proxygen::HTTPMessage httpMessage;
 
     httpMessage.setMethod(method);
