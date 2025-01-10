@@ -22,11 +22,11 @@ ifeval::["{docdir}" != ""]
 ----
 hide footbox
 
-participant "**main()**" as main
+participant "**main()**" as main  #LightGreen
 participant "**folly::Init**" as Init
-participant "**Test**" as test
+participant "**Test**" as test  #LightGreen
 participant "**EventBase**" as EventBase
-participant "**HttpClient**" as HttpClient
+participant "**HttpClient**" as HttpClient  #LightGreen
 participant "**HTTPConnector**" as HTTPConnector
 
 
@@ -66,10 +66,10 @@ ifeval::["{docdir}" != ""]
 hide footbox
 
 participant "**EventBase**" as EventBase
-participant "**HttpClient**" as HttpClient
+participant "**HttpClient**" as HttpClient  #LightGreen
 participant "**Promise**" as Promise
-participant "**Test**" as test
-participant "**TransactionHandler**" as TransactionHandler
+participant "**Test**" as test  #LightGreen
+participant "**TransactionHandler**" as TransactionHandler  #LightGreen
 participant "**HTTPUpstreamSession**" as HTTPUpstreamSession
 participant "**HTTPTransaction**" as HTTPTransaction
 participant "**HTTPConnector**" as HTTPConnector

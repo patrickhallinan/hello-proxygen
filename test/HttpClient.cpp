@@ -36,6 +36,7 @@ folly::Future<folly::Unit> HttpClient::connect() {
 
     static const folly::SocketOptionMap socketOptions{{{SOL_SOCKET, SO_REUSEADDR}, 1}};
 
+    // reset() ensures HTTPConnector is ready for subsequent connections.
     httpConnector_->reset();
     httpConnector_->connect(eb_, socketAddress, std::chrono::milliseconds(500), socketOptions);
 

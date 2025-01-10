@@ -54,10 +54,10 @@ ifeval::["{docdir}" != ""]
 ----
 hide footbox
 
-participant "**main()**\n\n" as main
+participant "**main()**\n\n" as main  #LightGreen
 participant "**folly::Init**\n\n" as Init
 participant "**EventBase**\n\n" as EventBase
-participant "**HttpClient**\n\n" as HttpClient
+participant "**HttpClient**\n\n" as HttpClient  #LightGreen
 participant "**WheelTimerInstance**\n\n" as WheelTimerInstance
 participant "**HTTPConnector**\n\n" as HTTPConnector
 
@@ -99,7 +99,7 @@ ifeval::["{docdir}" != ""]
 hide footbox
 
 participant "**AsyncSocket**\n\n" as AsyncSocket
-participant "**HttpClient**\n\n" as HttpClient
+participant "**HttpClient**\n\n" as HttpClient #LightGreen
 participant "**Promise**\n\n" as Promise
 participant "**HTTPConnector**\n\n" as HTTPConnector
 participant "**SocketAddress**\n\n" as SocketAddress
@@ -139,7 +139,7 @@ HttpClient -> Promise : setException( AsyncSocketException )
 endif::[]
 
 
-=== POST
+=== http post
 
 
 // for github
@@ -155,10 +155,10 @@ ifeval::["{docdir}" != ""]
 [plantuml, "http-client-post-seq.puml", svg]
 ----
 
-participant "**HttpClient**" as HttpClient
+participant "**HttpClient**" as HttpClient #LightGreen
 participant "**AsyncSocket**" as AsyncSocket
 participant "**Promise**" as Promise
-participant "**TransactionHandler**" as TransactionHandler
+participant "**TransactionHandler**" as TransactionHandler #LightGreen
 participant "**HTTPConnector**" as HTTPConnector
 participant "**HTTPUpstreamSession**" as HTTPUpstreamSession
 participant "**HTTPTransaction**" as HTTPTransaction

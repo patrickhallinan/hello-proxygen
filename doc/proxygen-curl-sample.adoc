@@ -38,11 +38,11 @@ ifeval::["{docdir}" != ""]
 ----
 hide footbox
 
-participant "**main()**\n\n" as main
+participant "**main()**\n\n" as main #LightGreen
 participant "**folly::Init**\n\n" as Init
 participant "**EventBase**\n\n" as EventBase
 participant "**URL**\n\n" as URL
-participant "**CurlClient**\n\n" as CurlClient
+participant "**CurlClient**\n\n" as CurlClient  #LightGreen
 participant "**WheelTimerInstance**\n\n" as WheelTimerInstance
 
 participant "**SocketAddress**\n\n" as SocketAddress
@@ -68,7 +68,7 @@ main -> EventBase : loop()
 endif::[]
 
 
-=== GET
+=== http get
 
 // for github
 ifeval::["{docdir}" == ""]
@@ -85,7 +85,7 @@ ifeval::["{docdir}" != ""]
 hide footbox
 
 participant "**HTTPConnector**\n\n" as HTTPConnector
-participant "**CurlClient**\n\n" as CurlClient
+participant "**CurlClient**\n\n" as CurlClient #LightGreen
 participant "**HTTPUpstreamSession**\n\n" as HTTPUpstreamSession
 participant "**HTTPSession**\n\n" as HTTPSession
 participant "**HTTPTransaction**\n\n" as HTTPTransaction
