@@ -4,7 +4,6 @@ ifeval::["{docdir}" == ""]
 :imagesdir: image
 endif::[]
 
-
 = proxygen curl sample
 
 This is intended to provide an idea of how the proxygen curl sample works.

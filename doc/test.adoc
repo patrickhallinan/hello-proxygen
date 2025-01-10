@@ -1,10 +1,11 @@
-= test
+:imagesdir: {docdir}/doc/image
 
 ifeval::["{docdir}" == ""]
 :imagesdir: image
 endif::[]
 
 
+= test
 
 == init
 

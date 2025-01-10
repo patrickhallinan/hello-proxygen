@@ -1,3 +1,9 @@
+:imagesdir: {docdir}/doc/image
+
+ifeval::["{docdir}" == ""]
+:imagesdir: image
+endif::[]
+
 = http-client
 
 == how should it work?
@@ -33,6 +39,17 @@ This should reflect the implementation in `test/` and the selected version of `p
 
 === create
 
+
+// for github
+ifeval::["{docdir}" == ""]
+image::http-client-create-seq_puml.png[]
+endif::[]
+
+
+// for eclipse asciidoc plugin
+ifeval::["{docdir}" != ""]
+
+
 [plantuml, "http-client-create-seq.puml", svg]
 ----
 hide footbox
@@ -60,12 +77,22 @@ note right #ff8888
     are serviced from the same thread.
 end note
 
-HttpClient -> HTTPConnector : ctor{ this, timer }        
-
+HttpClient -> HTTPConnector : ctor{ this, timer }
 ----
+
+endif::[]
 
 
 === connect
+
+// for github
+ifeval::["{docdir}" == ""]
+image::http-client-connect-seq_puml.png[]
+endif::[]
+
+
+// for eclipse asciidoc plugin
+ifeval::["{docdir}" != ""]
 
 [plantuml, "http-client-connect-seq.puml", svg]
 ----
@@ -109,12 +136,15 @@ HTTPConnector -> HttpClient : connectError( AsyncSocketException )
 HttpClient -> Promise : setException( AsyncSocketException ) 
 ----
 
+endif::[]
+
+
 === POST
 
 
 // for github
 ifeval::["{docdir}" == ""]
-image::http-get_puml.png[]
+image::http-client-post-seq_puml.png[]
 endif::[]
 
 
@@ -183,7 +213,7 @@ endif::[]
 
 // for github
 ifeval::["{docdir}" == ""]
-image::classes_puml.png[]
+image::http-client-classes_puml.png[]
 endif::[]
 
 
@@ -206,9 +236,23 @@ class "**HTTPTransactionHandler**\n\nhttp/session/HTTPTransaction.h" as HTTPTran
 class "**TransactionHandler**\n\n" as TransactionHandler
 class "**HttpClient**" as HttpClient
 
+class "**HTTPUpstreamSession**" as HTTPUpstreamSession
+class "**HTTPTransaction**" as HTTPTransaction
+
+class "**HTTPMessage**" as HTTPMessage
+
+note bottom #d0d0d0
+    GET /path HTTP/1.1
+    Host: 127.0.0.1:8080
+    User-Agent: test-client
+    Accept: */*
+    Connection: keep-alive
+    Content-Length: 0    
+end note
+
 AsyncSocketTransport <-- AsyncSocket
 
-ConnectCallback <- HTTPConnector
+ConnectCallback <-- HTTPConnector
 
 Callback <-- HttpClient
 HTTPTransactionHandler <-- TransactionHandler
@@ -216,11 +260,14 @@ HTTPTransactionHandler <-- TransactionHandler
 AsyncSocketTransport +-- ConnectCallback
 HTTPConnector +-- Callback
 
-'HTTPConnector o-- EventBase
 HTTPConnector o-- Callback
 HTTPConnector o-- AsyncSocket
 
+HTTPUpstreamSession o-- HTTPTransaction
+HTTPTransaction o-- HTTPTransactionHandler
+
 TransactionHandler o-- HttpClient
+
 
 class EventBase {
     loop()
@@ -333,10 +380,10 @@ folly::EventBaseManager::get()->getEventBase();
 
 ----
 folly/SocketAddress.h
+
 proxygen/lib/http/HTTPHeaders.h
 proxygen/lib/utils/URL.h
-proxygen/lib/http/HTTPMethod.h +
- * HTTPMethod::GET, HTTPMethod::POST
+proxygen/lib/http/HTTPMethod.h
 proxygen/lib/utils/WheelTimerInstance.h
 
 _build/generated/proxygen/lib/http/HTTPCommonHeaders.h
