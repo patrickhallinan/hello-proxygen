@@ -69,26 +69,6 @@ folly::Future<HttpResponse> HttpClient::POST(const std::string& content) {
 }
 
 
-void HttpClient::connectSuccess(HTTPUpstreamSession* session) {
-    if (url_.isSecure()) {
-        // TODO: sslHandshakeFollowup(session);
-    }
-
-    session_ = session;
-
-    // Set receive buffer sizes
-    session_->setFlowControl(65536, 65536, 65536);
-
-    connectPromise_->setValue(folly::unit);
-}
-
-
-void HttpClient::connectError(const folly::AsyncSocketException& e) {
-    LOG(ERROR) << url_.getHostAndPort() << ": " << e.what();
-    connectPromise_->setException(e);
-}
-
-
 proxygen::HTTPMessage HttpClient::createHttpMessage(proxygen::HTTPMethod method,
                                                     size_t contentLength) {
     proxygen::HTTPMessage httpMessage;
@@ -120,7 +100,33 @@ proxygen::HTTPMessage HttpClient::createHttpMessage(proxygen::HTTPMethod method,
 }
 
 
+// CONNECT EVENT HANDLERS
+
+void HttpClient::connectSuccess(HTTPUpstreamSession* session) {
+    if (url_.isSecure()) {
+        // TODO: sslHandshakeFollowup(session);
+    }
+
+    session_ = session;
+
+    // Set receive buffer sizes
+    session_->setFlowControl(65536, 65536, 65536);
+
+    connectPromise_->setValue(folly::unit);
+}
+
+
+void HttpClient::connectError(const folly::AsyncSocketException& e) {
+    LOG(ERROR) << url_.getHostAndPort() << ": " << e.what();
+    connectPromise_->setException(e);
+}
+
+
+// REQUEST EVENT HANDLERS
+
 void HttpClient::requestComplete(HttpResponse httpResponse) noexcept {
+    // XXX: Is there any reason to save this? Not used by HttpClient
+    // after creating transaction.
     txn_ = nullptr;
     requestPromise_->setValue(std::move(httpResponse));
 }
@@ -128,7 +134,6 @@ void HttpClient::requestComplete(HttpResponse httpResponse) noexcept {
 
 void HttpClient::requestError(const proxygen::HTTPException& error) noexcept {
     txn_ = nullptr;
-    LOG(ERROR) << "statusCode: " << error.getHttpStatusCode() << ", errorMessage: " << error.what();
     requestPromise_->setException(error);
 }
 

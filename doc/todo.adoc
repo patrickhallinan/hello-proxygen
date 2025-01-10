@@ -1,5 +1,0 @@
-= todo
-
-== install
-
-- [ ] test rocky-linux-9-deps.sh

@@ -107,7 +107,7 @@ HTTPConnector -> HttpClient : connectError( AsyncSocketException )
 HttpClient -> Promise : setException( AsyncSocketException ) 
 ----
 
-== POST
+=== POST
 
 
 // for github
@@ -125,6 +125,7 @@ ifeval::["{docdir}" != ""]
 
 participant "**HttpClient**" as HttpClient
 participant "**AsyncSocket**" as AsyncSocket
+participant "**Promise**" as Promise
 participant "**TransactionHandler**" as TransactionHandler
 participant "**HTTPConnector**" as HTTPConnector
 participant "**HTTPUpstreamSession**" as HTTPUpstreamSession
@@ -148,7 +149,8 @@ group send request
     HttpClient -> HTTPTransaction : sendEOM() // end of message
 end group
 
-<- HttpClient : Future<HttpResponse>
+HttpClient -> Promise : getFuture()
+<-- HttpClient : Future<HttpResponse>
 
 
 == response events ==
@@ -162,6 +164,9 @@ note left
 end note
 
 HTTPTransaction -> TransactionHandler : onEOM()
+TransactionHandler -> HttpClient : requestComplete( httpResponse )
+HttpClient -> Promise : setValue( httpResponse )
+
 note across
     **NOTE:** HttpClient::onError() can be called between HttpClient::onEOM() and HttpClient::detachTransaction()
 end note
@@ -180,8 +185,8 @@ class "**HttpClient**\n\n" as HttpClient
 
 class "**HTTPSession**\n\nHTTPSession.h" as HTTPSession
 note left
-    This implements a LOT of
-    callback handler interfaces
+    Implements a LOT of
+    handler interfaces
 end note
 
 class "**HTTPUpstreamSession**\n\nHTTPUpstreamSession.h" as HTTPUpstreamSession
