@@ -3,9 +3,9 @@
 #include <proxygen/httpserver/RequestHandler.h>
 
 
-class HttpHandler : public proxygen::RequestHandler {
+class EchoHandler : public proxygen::RequestHandler {
 public:
-    HttpHandler(folly::EventBase* eb)
+    EchoHandler(folly::EventBase* eb)
         : eb_{eb}
     {}
 
@@ -38,6 +38,6 @@ public:
 
 private:
     folly::EventBase* eb_;
-    std::unique_ptr<folly::IOBuf> body_;
-    std::unique_ptr<proxygen::HTTPMessage> headers_;
+    std::unique_ptr<proxygen::HTTPMessage> httpMessage_;
+    std::unique_ptr<folly::IOBuf> buf_;
 };

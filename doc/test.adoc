@@ -1,0 +1,142 @@
+:imagesdir: {docdir}/doc/image
+
+ifeval::["{docdir}" == ""]
+:imagesdir: image
+endif::[]
+
+
+= test
+
+== init
+
+// github
+ifeval::["{docdir}" == ""]
+image::test-init-seq_puml.png[]
+endif::[]
+
+
+// eclipse asciidoc plugin
+ifeval::["{docdir}" != ""]
+
+[plantuml, "test-init-seq.puml", svg]
+----
+hide footbox
+
+participant "**main()**" as main
+participant "**folly::Init**" as Init
+participant "**Test**" as test
+participant "**EventBase**" as EventBase
+participant "**HttpClient**" as HttpClient
+participant "**HTTPConnector**" as HTTPConnector
+
+
+main -> Init : ctor{ &argc, &argv }
+main -> EventBase : eb=ctor{}
+
+main -> test : ctor{ eb, timer }
+
+test -> HttpClient : ctor{\n  EventBase,\n  defaultTimeout,\n  url,\n  headers }
+
+HttpClient -> HTTPConnector : ctor{ this, timer }        
+
+main -> test : run()
+
+test -> EventBase : runInEventBaseThread( callback )
+
+main -> EventBase : loop()
+----
+
+endif::[]
+
+
+== test ==
+
+// github
+ifeval::["{docdir}" == ""]
+image::test-seq_puml.png[]
+endif::[]
+
+
+// eclipse asciidoc plugin
+ifeval::["{docdir}" != ""]
+
+
+[plantuml, "test-seq.puml", svg]
+----
+hide footbox
+
+participant "**EventBase**" as EventBase
+participant "**HttpClient**" as HttpClient
+participant "**Promise**" as Promise
+participant "**Test**" as test
+participant "**TransactionHandler**" as TransactionHandler
+participant "**HTTPUpstreamSession**" as HTTPUpstreamSession
+participant "**HTTPTransaction**" as HTTPTransaction
+participant "**HTTPConnector**" as HTTPConnector
+
+
+EventBase -> test : callback()
+test -> HttpClient : connect()
+
+HttpClient -> HTTPConnector : connect( EventBase, socketAddress, timeout, SocketOptionMap )
+HttpClient -> Promise : ctor{}
+HttpClient -> Promise : getFuture()
+HttpClient --> test : Future
+
+== connect success ==
+
+HTTPConnector -> HttpClient : connectSuccess( HTTPUpstreamSession )
+HttpClient -> Promise : setValue()
+
+== .thenValue() ==
+
+EventBase -> test : callback()
+test -> HttpClient : GET()
+HttpClient -> TransactionHandler : txnHandler=ctor{ this }
+HttpClient -> HTTPUpstreamSession : newTransaction( txnHandler )
+HttpClient -> HttpClient : http_message=createHttpMessage( GET )
+HttpClient -> HTTPTransaction : sendHeaders( http_message )
+HttpClient -> HTTPTransaction : sendEOM()
+
+HttpClient --> test : Future
+
+== GET response ==
+
+HTTPTransaction -> TransactionHandler : 
+
+HTTPTransaction -> TransactionHandler : onHeadersComplete( unique_ptr<proxygen::HTTPMessage> )
+
+HTTPTransaction -> TransactionHandler : onBody( unique_ptr<folly::IOBuf> )
+note left
+    called repeatedly until
+    message is complete
+end note
+
+HTTPTransaction -> TransactionHandler : onEOM()
+note across
+    **NOTE:** TransactionHandler::onError() can be called between TransactionHandler::onEOM() and TransactionHandler::detachTransaction()
+end note
+
+TransactionHandler -> HttpClient : requestComplete( httpResponse )
+HttpClient -> Promise : setValue( httpResponse )
+
+HTTPTransaction -> TransactionHandler : detachTransaction()
+
+== .thenValue() ==
+
+EventBase -> test : callback( HttpResponse )
+
+test -> HttpClient : POST( "Echo" )
+HttpClient -> TransactionHandler : txnHandler=ctor{ this }
+HttpClient -> HTTPUpstreamSession : newTransaction( txnHandler )
+HttpClient -> HttpClient : http_message=createHttpMessage( GET )
+HttpClient -> HTTPTransaction : sendHeaders( http_message )
+HttpClient -> HTTPTransaction : sendBody( content )
+HttpClient -> HTTPTransaction : sendEOM()
+
+HttpClient --> test : Future
+
+== etc... ==
+----
+
+endif::[]

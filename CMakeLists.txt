@@ -1,12 +1,27 @@
-project (HelloProxygen)
 cmake_minimum_required(VERSION 3.16)
 
-set(GCC_COMPILE_FLAGS "-Wfatal-errors")
+project (HelloProxygen)
+
+# for rtags
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+# Set the C++ standard to C++23 for all targets
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+set(GCC_COMPILE_FLAGS "-Wfatal-errors -g")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_COMPILE_FLAGS}")
+
+set(CMAKE_CXX_COMPILER "clang++")
+set(CMAKE_C_COMPILER "clang")
 
 set(CMAKE_PREFIX_PATH
     "proxygen/proxygen/_build/"
 )
+
+# Suppress warnings for headers included
+# add_compile_options(-isystem /usr/include/openssl)
+include_directories(SYSTEM proxygen/proxygen/_build/deps/include)
 
 include_directories(
 PUBLIC
@@ -14,6 +29,7 @@ PUBLIC
     proxygen/proxygen/_build/deps/include
     proxygen/proxygen/_build/generated/
 )
+
 
 link_directories(
     proxygen/proxygen/_build/deps/lib/
@@ -25,40 +41,5 @@ link_directories(
 )
 
 
-add_executable(Hello
-    main.cpp
-    HttpHandlerFactory.cpp
-    HttpHandler.cpp
-)
-
-target_link_libraries(Hello
-PUBLIC
-    proxygenhttpserver
-    proxygen
-    wangle
-    fizz
-    folly
-
-    unwind
-    sodium
-
-    bz2
-    dl
-    event
-    iberty
-    pthread
-    fmt
-    glog
-    gflags
-    ssl
-    lzma
-    lz4
-    snappy
-    crypto
-    z
-    zstd
-    double-conversion
-
-    boost_context
-)
-
+add_subdirectory(hello)
+add_subdirectory(test)

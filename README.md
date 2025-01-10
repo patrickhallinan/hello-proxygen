@@ -1,6 +1,6 @@
 # README
   
-Tested on ubuntu 20.04
+Tested on ubuntu 24.04 and Rockly Linux 9 (red hat clone)
 
 ## get repo
 ```
@@ -9,20 +9,30 @@ git clone --recurse-submodules  git@github.com:patrickhallinan/hello-proxygen
 
 ## build proxygen
 
-**From the root directory**
+**From project root**
 
 ```
-cd proxygen/proxygen
-./build.sh
+cd proxygen/proxygen && ./build.sh
 ```
 
 ## build hello proxygen
 
-**From the root directory**
+**From project root**
 
 ```
-mkdir build
-cd build
-cmake ..
+mkdir build && cd build && cmake ..
+```
+
+```
 make
+```
+
+## test with curl
+
+```
+curl http://localhost:8080
+```
+
+```
+curl -X POST -D "nacho" http://localhost:8080
 ```
