@@ -28,10 +28,12 @@ void main() {
 
 == uml
 
+This should reflect the implementation in `test/` and the selected version of `proxygen`
+
 
 === create
 
-[plantuml, "http-client-init-seq.puml", svg]
+[plantuml, "http-client-create-seq.puml", svg]
 ----
 hide footbox
 
@@ -120,7 +122,7 @@ endif::[]
 ifeval::["{docdir}" != ""]
 
 
-[plantuml, "http-client-get.puml", svg]
+[plantuml, "http-client-post-seq.puml", svg]
 ----
 
 participant "**HttpClient**" as HttpClient
@@ -177,37 +179,125 @@ HTTPTransaction -> TransactionHandler : detachTransaction()
 endif::[]
 
 
-=== class diagram
+=== classes
 
-[plantuml, "classes.puml", svg]
+// for github
+ifeval::["{docdir}" == ""]
+image::classes_puml.png[]
+endif::[]
+
+
+// for eclipse asciidoc plugin
+ifeval::["{docdir}" != ""]
+
+
+[plantuml, "http-client-classes.puml", svg]
 ----
-class "**HttpClient**\n\n" as HttpClient
+class "**AsyncSocket**" as AsyncSocket
 
-class "**HTTPSession**\n\nHTTPSession.h" as HTTPSession
-note left
-    Implements a LOT of
-    handler interfaces
-end note
+class "**AsyncSocketTransport**\n\nfolly/io/async/AsyncSocketTransport.h" as AsyncSocketTransport
 
-class "**HTTPUpstreamSession**\n\nHTTPUpstreamSession.h" as HTTPUpstreamSession
-class "**HTTPTransaction**\n\nHTTPTransaction.h" as HTTPTransaction
+abstract "**ConnectCallback**\n\nfolly/io/async/AsyncSocketTransport.h*" as ConnectCallback
 
+class "**EventBase**" as EventBase
+class "**HTTPConnector**\n\nhttp/HTTPConnector.h" as HTTPConnector
+class "**Callback**\n\nhttp/HTTPConnector.h" as Callback
+class "**HTTPTransactionHandler**\n\nhttp/session/HTTPTransaction.h" as HTTPTransactionHandler
+class "**TransactionHandler**\n\n" as TransactionHandler
+class "**HttpClient**" as HttpClient
 
-HTTPSession <- HTTPUpstreamSession
+AsyncSocketTransport <-- AsyncSocket
 
-class HttpClient {
+ConnectCallback <- HTTPConnector
+
+Callback <-- HttpClient
+HTTPTransactionHandler <-- TransactionHandler
+
+AsyncSocketTransport +-- ConnectCallback
+HTTPConnector +-- Callback
+
+'HTTPConnector o-- EventBase
+HTTPConnector o-- Callback
+HTTPConnector o-- AsyncSocket
+
+TransactionHandler o-- HttpClient
+
+class EventBase {
+    loop()
+    loopForever()
+}
+
+class HTTPConnector {
+    connect()
+    ----
+    {abstract} connectSuccess()
+    {abstract} connectErr(AsyncSocketException)
+    {abstract} preConnect(NetworkSocket /*fd*/)
+
+    ----
+    Callback* httpClient
+    folly::AsyncTransport::UniquePtr socket_;
+    'wangle::TransportInfo transportInfo_;
+}
+
+class AsyncSocket {
+    ctor( EventBase )
+    connect( ConnectCallback, SocketAddress, int timeout)
+}
+
+class TransactionHandler #LightGreen  {
+    {abstract} void setTransaction( HTTPTransaction* txn )
+
+    {abstract}  void detachTransaction() // transaction no longer valid
+
+    {abstract} void onHeadersComplete( unique_ptr<HTTPMessage> )
+    {abstract} void onBody( unique_ptr<folly::IOBuf> chain )
+    {abstract} void onEOM()
+
+    {abstract} void onError( HTTPException )
+}
+
+class HttpClient #LightGreen  {
     - Promise<Unit> connected_
     - Promise<HttpResponse> requestComplete_
     
     + Future<Unit> **connect**( host, port )
     + Future<HttpResponse> **GET**( path )
     + Future<HttpResponse> **POST**( path, content )
+
+    {abstract} connectSuccess()
+    {abstract} connectErr( AsyncSocketException )
+    {abstract} preConnect( NetworkSocket )
+
+    {abstract} void setTransaction( HTTPTransaction )
+    {abstract}  void detachTransaction()
+    {abstract}  void onHeadersComplete( unique_ptr<HTTPMessage> )
+    {abstract}  void onBody( unique_ptr<folly::IOBuf> )
 }
 
-class HTTPSession {
-    {abstract} **setFlowControl**(\n  size_t initialReceiveWindow,\n  size_t receiveStreamWindowSize,\n  size_t receiveSessionWindowSize )
+class ConnectCallback {
+    {abstract} connectSuccess() = 0
+    {abstract} connectErr( AsyncSocketException ) = 0
+    {abstract} preConnect( NetworkSocket /*fd*/ )
 }
 
+class Callback {
+    {abstract} connectSuccess( HTTPUpstreamSession ) = 0
+    {abstract} connectError( folly::AsyncSocketException ) = 0
+    {abstract} preConnect( folly::AsyncTransport* )
+}
+
+class HTTPTransactionHandler {
+    {abstract} void setTransaction( HTTPTransaction* txn )
+
+    {abstract}  void detachTransaction() // transaction no longer valid
+
+    {abstract} void onHeadersComplete( unique_ptr<HTTPMessage> )
+    {abstract} void onBody( unique_ptr<folly::IOBuf> chain )
+    {abstract} void onEOM()
+
+    {abstract} void onError( HTTPException )
+}
 
 class HTTPTransaction {
     +{abstract} sendHeaders( HTTPMessage )
@@ -226,7 +316,28 @@ class HTTPMessage {
 
     getHeaders()
 }
+----
 
+endif::[]
+
+
+== useful functions
+
+[source, c++]
+----
+folly::EventBaseManager::get()->getEventBase(); 
 ----
 
 
+== some useful headers
+
+----
+folly/SocketAddress.h
+proxygen/lib/http/HTTPHeaders.h
+proxygen/lib/utils/URL.h
+proxygen/lib/http/HTTPMethod.h +
+ * HTTPMethod::GET, HTTPMethod::POST
+proxygen/lib/utils/WheelTimerInstance.h
+
+_build/generated/proxygen/lib/http/HTTPCommonHeaders.h
+----

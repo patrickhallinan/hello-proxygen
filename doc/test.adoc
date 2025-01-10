@@ -10,14 +10,14 @@ endif::[]
 
 // github
 ifeval::["{docdir}" == ""]
-image::curl-init_puml.png[]
+image::test-init-seq_puml.png[]
 endif::[]
 
 
 // eclipse asciidoc plugin
 ifeval::["{docdir}" != ""]
 
-[plantuml, "curl-init.puml", svg]
+[plantuml, "test-init-seq.puml", svg]
 ----
 hide footbox
 
@@ -50,7 +50,17 @@ endif::[]
 
 == test ==
 
-[plantuml, "test.puml", svg]
+// github
+ifeval::["{docdir}" == ""]
+image::test-seq_puml.png[]
+endif::[]
+
+
+// eclipse asciidoc plugin
+ifeval::["{docdir}" != ""]
+
+
+[plantuml, "test-seq.puml", svg]
 ----
 hide footbox
 
@@ -128,144 +138,4 @@ HttpClient --> test : Future
 == etc... ==
 ----
 
-
-== classes
-
-// for github
-ifeval::["{docdir}" == ""]
-image::classes_puml.png[]
 endif::[]
-
-
-// for eclipse asciidoc plugin
-ifeval::["{docdir}" != ""]
-
-
-[plantuml, "classes.puml", svg]
-----
-
-
-
-class "**AsyncSocket**" as AsyncSocket
-
-class "**AsyncSocketTransport**\n\nfolly/io/async/AsyncSocketTransport.h" as AsyncSocketTransport
-
-abstract "**ConnectCallback**\n\nfolly/io/async/AsyncSocketTransport.h*" as ConnectCallback
-
-class "**EventBase**" as EventBase
-class "**HTTPConnector**\n\nhttp/HTTPConnector.h" as HTTPConnector
-class "**Callback**\n\nhttp/HTTPConnector.h" as Callback
-class "**HTTPTransactionHandler**\n\nhttp/session/HTTPTransaction.h" as HTTPTransactionHandler
-class "**TransactionHandler**\n\n" as TransactionHandler
-class "**HttpClient**" as HttpClient
-
-AsyncSocketTransport <-- AsyncSocket
-
-ConnectCallback <- HTTPConnector
-
-Callback <-- HttpClient
-HTTPTransactionHandler <-- TransactionHandler
-
-AsyncSocketTransport +-- ConnectCallback
-HTTPConnector +-- Callback
-
-'HTTPConnector o-- EventBase
-HTTPConnector o-- Callback
-HTTPConnector o-- AsyncSocket
-
-TransactionHandler o-- HttpClient
-
-class EventBase {
-    loop()
-    loopForever()
-}
-
-class HTTPConnector {
-    connect()
-    ----
-    {abstract} connectSuccess()
-    {abstract} connectErr(AsyncSocketException)
-    {abstract} preConnect(NetworkSocket /*fd*/)
-
-    ----
-    Callback* httpClient
-    folly::AsyncTransport::UniquePtr socket_;
-    'wangle::TransportInfo transportInfo_;
-}
-
-class AsyncSocket {
-    ctor( EventBase )
-    connect( ConnectCallback, SocketAddress, int timeout)
-}
-
-class TransactionHandler #LightGreen  {
-    {abstract} void setTransaction( HTTPTransaction* txn )
-
-    {abstract}  void detachTransaction() // transaction no longer valid
-
-    {abstract} void onHeadersComplete( unique_ptr<HTTPMessage> )
-    {abstract} void onBody( unique_ptr<folly::IOBuf> chain )
-    {abstract} void onEOM()
-
-    {abstract} void onError( HTTPException )
-}
-
-class HttpClient #LightGreen  {
-    {abstract} connectSuccess()
-    {abstract} connectErr( AsyncSocketException )
-    {abstract} preConnect( NetworkSocket )
-
-    {abstract} void setTransaction( HTTPTransaction )
-    {abstract}  void detachTransaction()
-    {abstract}  void onHeadersComplete( unique_ptr<HTTPMessage> )
-    {abstract}  void onBody( unique_ptr<folly::IOBuf> )
-}
-
-class ConnectCallback {
-    {abstract} connectSuccess() = 0
-    {abstract} connectErr( AsyncSocketException ) = 0
-    {abstract} preConnect( NetworkSocket /*fd*/ )
-}
-
-class Callback {
-    {abstract} connectSuccess( HTTPUpstreamSession ) = 0
-    {abstract} connectError( folly::AsyncSocketException ) = 0
-    {abstract} preConnect( folly::AsyncTransport* )
-}
-
-class HTTPTransactionHandler {
-    {abstract} void setTransaction( HTTPTransaction* txn )
-
-    {abstract}  void detachTransaction() // transaction no longer valid
-
-    {abstract} void onHeadersComplete( unique_ptr<HTTPMessage> )
-    {abstract} void onBody( unique_ptr<folly::IOBuf> chain )
-    {abstract} void onEOM()
-
-    {abstract} void onError( HTTPException )
-}
-----
-
-endif::[]
-
-
-== useful functions
-
-[source, c++]
-----
-folly::EventBaseManager::get()->getEventBase(); 
-----
-
-
-== some useful headers
-
-----
-folly/SocketAddress.h
-proxygen/lib/http/HTTPHeaders.h
-proxygen/lib/utils/URL.h
-proxygen/lib/http/HTTPMethod.h +
- * HTTPMethod::GET, HTTPMethod::POST
-proxygen/lib/utils/WheelTimerInstance.h
-
-_build/generated/proxygen/lib/http/HTTPCommonHeaders.h
-----
