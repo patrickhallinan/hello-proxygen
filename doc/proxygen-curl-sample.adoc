@@ -1,7 +1,7 @@
 :imagesdir: {docdir}/doc/image
 
 ifeval::["{docdir}" == ""]
-:imagesdir: images
+:imagesdir: image
 endif::[]
 
 
