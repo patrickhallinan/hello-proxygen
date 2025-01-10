@@ -101,7 +101,7 @@ group create transaction
     CurlClient -> HTTPUpstreamSession : txn=newTransaction( this )
     HTTPUpstreamSession -> HTTPUpstreamSession : newTransactionWithError( txnHandler )
     HTTPUpstreamSession -> HTTPUpstreamSession : startNow()
-    HTTPUpstreamSession -> HTTPSession : startNow()    
+    HTTPUpstreamSession -> HTTPSession : startNow()
     HTTPUpstreamSession -> HTTPSession : createTransaction()
     HTTPUpstreamSession -> CurlClient : HTTPTransaction
 end group
@@ -114,7 +114,7 @@ group send request
     CurlClient -> HTTPTransaction : sendEOM()
 end group
 
-CurlClient -> HTTPUpstreamSession : closeWhenIdle()    
+CurlClient -> HTTPUpstreamSession : closeWhenIdle()
 
 == response events ==
 
