@@ -33,6 +33,7 @@ PUBLIC
 
 link_directories(
     proxygen/proxygen/_build/deps/lib/
+    proxygen/proxygen/_build/deps/lib64/
     proxygen/proxygen/_build/proxygen/lib/
     proxygen/proxygen/_build/proxygen/lib/http/
     proxygen/proxygen/_build/proxygen/lib/services/
