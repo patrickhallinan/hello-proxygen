@@ -8,11 +8,18 @@ Tested on ubuntu 24.04 and Rockly Linux 9 (red hat clone)
 git clone --recurse-submodules  git@github.com:patrickhallinan/hello-proxygen
 ```
 
+## install dependencies
 
-## Rocky Linux 9 (red hat clone)
+### Rocky Linux 9 (red hat clone)
 
 ```bash
 script/rocky-linux-9-deps.sh
+```
+
+### Ubuntu 24.04
+
+```bash
+sudo apt install clang libbz2-dev
 ```
 
 

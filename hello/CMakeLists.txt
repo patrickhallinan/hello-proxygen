@@ -33,7 +33,6 @@ PUBLIC
     z
     zstd
     double-conversion
-    bz2
 
     boost_context
 )
