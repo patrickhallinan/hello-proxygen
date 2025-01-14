@@ -20,7 +20,6 @@ int main(int argc, char* argv[]) {
     Test test(eventBase);
     test.run();
 
-    // XXX: Why does this wait 1m 12s after finishing the test?
     eventBase.loop();
 
     LOG(INFO) << "Exit main()\n";

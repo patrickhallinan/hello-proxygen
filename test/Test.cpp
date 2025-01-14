@@ -7,6 +7,7 @@
 
 #include <proxygen/lib/utils/WheelTimerInstance.h>
 
+#include <cstdlib>
 #include <chrono>
 #include <source_location>
 
@@ -94,6 +95,11 @@ void Test::run() {
                               else {
                                   LOG(INFO) << "FAILED";
                               }
+
+                              // XXX: Why does this wait 1m 12s after finishing the test?
+                              // HACK: Remove once exit delay is figured out.
+                              int status = passed? 0 : 1;
+                              exit(status);
                           });
     });
 }
