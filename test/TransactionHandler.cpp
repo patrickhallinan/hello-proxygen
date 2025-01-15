@@ -9,6 +9,7 @@ void TransactionHandler::setTransaction(proxygen::HTTPTransaction* txn) noexcept
 
 
 void TransactionHandler::detachTransaction() noexcept {
+    // At this point this could be reused instead of deleted.
     delete this;
 }
 
@@ -24,6 +25,7 @@ void TransactionHandler::onBody(std::unique_ptr<folly::IOBuf> chain) noexcept {
         return;
     }
 
+    // IOBuf is a circular linked list.
     if (inputBuf_) {
         inputBuf_->prependChain(std::move(chain));
     } else {
@@ -36,6 +38,9 @@ void TransactionHandler::onEOM() noexcept {
 
     std::string body = inputBuf_->moveToFbString().toStdString();
     HttpResponse httpResponse{response_->getStatusCode(), std::move(body)};
+
+    // XXX: If TransactionHandler owned the Promise we could skip the middle-man
+    // and send the response directly to the HttpClient user.
 
     // FIXME: onError() can be called after onEOM()
     httpClient_->requestComplete(std::move(httpResponse));

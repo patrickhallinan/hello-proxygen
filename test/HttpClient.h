@@ -8,8 +8,6 @@
 #include <proxygen/lib/http/HTTPConnector.h>
 #include <proxygen/lib/utils/URL.h>
 
-#include <proxygen/lib/utils/WheelTimerInstance.h>
-
 #include <chrono>
 
 class HttpResponse {

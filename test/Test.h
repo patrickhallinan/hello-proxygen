@@ -9,10 +9,6 @@ namespace folly {
 class EventBase;
 }
 
-namespace proxygen {
-class WheelTimerInstance;
-}
-
 
 class Test {
 public:

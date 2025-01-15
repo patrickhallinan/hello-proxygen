@@ -1,11 +1,61 @@
-:imagesdir: {docdir}/doc/image
-
 ifeval::["{docdir}" == ""]
 :imagesdir: image
 endif::[]
 
-
 = test
+
+The test works but the Test class is kind of useless.  A mental placeholder.
+
+[source, c++]
+----
+void Test::run() {
+    eventBase_.runInEventBaseThread([http=httpClient_.get()]() {
+        return http->connect()
+                   .thenValue([http](folly::Unit) {
+                       return http->GET();
+                   })
+                   .thenValue([http](const HttpResponse& response) {
+                       assert_equal(response.status(), 200);
+                       assert_equal(response.content(), "Hello");
+ 
+                       return http->POST("Echo");
+                   })
+                   .thenValue([](const HttpResponse& response) {
+                       assert_equal(response.status(), 200);
+                       assert_equal(response.content(), "Echo");
+                   });
+    });
+}
+----
+
+Maybe something like this in the future?  Similar to link:https://github.com/cppfw/tst/blob/main/wiki/tutorial.adoc#declare-first-test-case[tst wiki]
+
+[source, c++]
+----
+TestSuite SomeName("tests", [](TestSuite& suite){
+
+    suite.setup([](HttpClient& http) {
+        return http.connect(host, port);
+    });
+
+    suite.add_test("hello", [](HttpClient& http) {
+        return http.GET("/hello")
+                   .thenValue([](const HttpResponse& response) {
+                       assert_equal(response.status(), 200);
+                       assert_equal(response.content(), "Hello");
+                   });
+    });
+
+    suite.add_test("echo", [](HttpClient& http) {
+        return http.POST("/echo", "Echo")
+                   .thenValue([](const HttpResponse& response) {
+                       assert_equal(response.status(), 200);
+                       assert_equal(response.content(), "Echo");
+                   });
+    });
+});
+----
+
 
 == init
 
@@ -17,6 +67,7 @@ endif::[]
 
 // eclipse asciidoc plugin
 ifeval::["{docdir}" != ""]
+
 
 [plantuml, "test-init-seq.puml", svg]
 ----

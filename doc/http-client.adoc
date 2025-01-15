@@ -1,18 +1,23 @@
-:imagesdir: {docdir}/doc/image
-
 ifeval::["{docdir}" == ""]
 :imagesdir: image
 endif::[]
 
 = http-client
 
-== how should it work?
+This is a proof of concept.  Not a mature implementation.
 
+
+== how should it work?
 
 [source, c++]
 ----
 void main() {
     // ...
+
+    EventBase eventBase;
+
+    HttpClient httpClient(&eventBase, defaultTimeout, httpHeaders);
+
     eventBase.runInEventBaseThread([&]() {
     
         httpClient.connect( host, port, /*isSecure=*/false )
@@ -22,19 +27,34 @@ void main() {
                   .thenValue([]( HttpResponse response ) {
                       // ...
                   })
-                  .thenError([](const std::exception& e) {
+                  .thenError([]( const std::exception& e ) {
                       // ...
                   });
     });
               
+    // blocks
     eventBase.loop()
 }
 ----
 
 
-== uml
+== how does it work?
 
-This should reflect the implementation in `test/` and the selected version of `proxygen`
+[source, c++]
+----
+    // ...
+    HttpClient httpClient(&eventBase, defaultTimeout, httpHeaders, url);
+
+    eventBase.runInEventBaseThread([&]() {
+
+        httpClient.connect()
+                  .thenValue([&]( Unit ) {
+                      return httpClient.POST("content");
+    // ...
+----
+
+
+== uml
 
 
 === create

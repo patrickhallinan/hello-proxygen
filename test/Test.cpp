@@ -5,8 +5,6 @@
 #include <folly/io/async/EventBase.h>
 #include <gflags/gflags_declare.h>
 
-#include <proxygen/lib/utils/WheelTimerInstance.h>
-
 #include <cstdlib>
 #include <chrono>
 #include <source_location>
@@ -60,7 +58,7 @@ void Test::run() {
 
                               return httpClient->GET();
                           })
-                          .thenValue([httpClient](const HttpResponse&& response) {
+                          .thenValue([httpClient](const HttpResponse& response) {
                               LOG(INFO) << "Status: " << response.status()
                                   << ", Content: " << response.content();
 
@@ -69,7 +67,7 @@ void Test::run() {
 
                               return httpClient->POST("Echo");
                           })
-                          .thenValue([httpClient](const HttpResponse&& response) {
+                          .thenValue([httpClient](const HttpResponse& response) {
                               LOG(INFO) << "Status: " << response.status()
                                   << ", Content: " << response.content();
 
@@ -77,7 +75,7 @@ void Test::run() {
 
                               return httpClient->POST("");
                           })
-                          .thenValue([](const HttpResponse&& response) {
+                          .thenValue([](const HttpResponse& response) {
                               LOG(INFO) << "Status: " << response.status()
                                   << ", Content: " << response.content();
 
