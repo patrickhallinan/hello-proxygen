@@ -8,6 +8,9 @@ add_executable(test
 )
 
 
+find_package(bz2 QUIET)
+
+
 target_link_libraries(test
 PUBLIC
     proxygenhttpserver
@@ -34,7 +37,8 @@ PUBLIC
     iberty
     event
     double-conversion
-    bz2
+
+    $<IF:$<BOOL:${bz2_FOUND}>,bz2,>
 
     boost_context
 )

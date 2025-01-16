@@ -3,6 +3,7 @@
 #include "HttpClient.h"
 
 #include <folly/io/async/EventBase.h>
+#include <fmt/format.h>
 #include <gflags/gflags_declare.h>
 
 #include <cstdlib>
@@ -17,18 +18,30 @@ DECLARE_int32(hello_port);
 static proxygen::HTTPHeaders httpHeaders();
 
 
+#ifdef __cpp_lib_source_location
 template<typename T, typename U>
 void assert_equal(T const& a, U const& b,
                   const std::source_location& loc = std::source_location::current()) {
 
     if (a != b) {
 
-        std::string msg =  std::format("Failed: '{}' != '{}'  -> {}:{}",
+        std::string msg =  fmt::format("Failed: '{}' != '{}'  -> {}:{}",
             a, b, loc.file_name(), loc.line());
 
         throw std::runtime_error(msg);
     }
 }
+#else
+
+#define  assert_equal(a,b) { \
+    if ((a) != (b)) { \
+        std::string msg =  fmt::format("Failed: '{}' != '{}'  -> {}:{}", \
+            (a), (b), __FILE__, __LINE__); \
+        throw std::runtime_error(msg); \
+    } \
+}
+
+#endif
 
 
 Test::Test(folly::EventBase& eventBase)

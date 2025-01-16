@@ -7,6 +7,9 @@ add_executable(hello
 )
 
 
+find_package(bz2 QUIET)
+
+
 target_link_libraries(hello
 PUBLIC
     proxygenhttpserver
@@ -33,7 +36,8 @@ PUBLIC
     z
     zstd
     double-conversion
-    bz2
+
+    $<IF:$<BOOL:${bz2_FOUND}>,bz2,>
 
     boost_context
 )

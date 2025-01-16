@@ -24,7 +24,7 @@ script/rocky-linux-9-deps.sh
 Linking fails on Rocky Linux unless `bz2` is added to the `target_link_libraries` in `cmake`.  When this is added we have to install `libbz2-dev` on `ubuntu` or it will fail to link.
 
 ```bash
-sudo apt install clang libbz2-dev
+sudo apt install clang
 ```
 
 
