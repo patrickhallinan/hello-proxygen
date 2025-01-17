@@ -34,7 +34,6 @@ PUBLIC
     iberty
     event
     double-conversion
-    bz2
 
     boost_context
 )

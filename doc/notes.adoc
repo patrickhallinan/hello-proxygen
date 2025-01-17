@@ -3,6 +3,7 @@
 == building on wsl - ubuntu 24.04
 
 NOTE: when clang was installed its libstdc++ dependency was missing.  This was very strange because gcc was working fine.
+
 ----
 sudo apt install clang libstdc++-14-dev   
 ----
@@ -12,37 +13,13 @@ sudo apt install clang libstdc++-14-dev
 
 NOTE: In last clean build on rocky linux had to build proxygen twice for it to complete successfully
 
-=== install dependencies
-
-==== dnf
-
-----
-script/rocky-linux-9-deps.sh
-----
-
-----
-sudo dnf install -y epel-release
-sudo dnf update -y
-sudo dnf config-manager --set-enabled crb
-sudo dnf install -y cmake gcc gcc-c++ boost boost-devel double-conversion-devel
-sudo dnf install -y fast_float-devel libevent-devel openssl-devel glog-devel zlib-devel libsodium-devel gperf
-sudo dnf install libunwind-devel binutils-devel xz-devel lz4-devel snappy-devel libzstd-devel
-sudo dnf install libunwind-devel binutils-devel xz-devel lz4-devel snappy-devel libzstd-devel bzip2-devel
-----
+This was a memory issue.  Increasing to 20GB fixed this.
 
 
+== building on debian 12 on chromebook
 
-
-==== fmt library version 11
+There's a build optios to set the number of jobs.  With the number of jobs set to 1 it build on a chromebook.
 
 ----
-git clone https://github.com/fmtlib/fmt.git
-
-cd fmt
-git checkout 11.0.2
-mkdir build
-cd build
-cmake ..
-cmake --build .
-sudo cmake --install .
----- 
+./build.sh -j <number-of-jobs>
+----

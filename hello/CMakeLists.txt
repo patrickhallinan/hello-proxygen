@@ -33,8 +33,17 @@ PUBLIC
     z
     zstd
     double-conversion
-    bz2
 
     boost_context
 )
+
+
+# for rocky linux
+find_library(BZ2_LIB bz2)
+if(BZ2_LIB)
+target_link_libraries(hello
+PUBLIC
+    bz2
+)
+endif()
 

@@ -1,6 +1,6 @@
 # README
   
-Tested on ubuntu 24.04 and Rockly Linux 9 (red hat clone)
+Tested on ubuntu 24.04 (wsl), Debian 12 Bookworm on a chromebook, and Rockly Linux 9 (red hat clone)
 
 
 ## get repo
@@ -13,18 +13,16 @@ git clone --recurse-submodules  git@github.com:patrickhallinan/hello-proxygen
 
 ### Rocky Linux 9 (red hat clone)
 
-The proxygen build script `build.sh` installs dependencies for Linux with `apt` so it doesn't work for Rocky Linux.
+The proxygen build script `build.sh` installs dependencies for Linux with `apt` which doesn't work for Rocky Linux.
 
 ```bash
 script/rocky-linux-9-deps.sh
 ```
 
-### Ubuntu 24.04
-
-Linking fails on Rocky Linux unless `bz2` is added to the `target_link_libraries` in `cmake`.  When this is added we have to install `libbz2-dev` on `ubuntu` or it will fail to link.
+### Ubuntu 24.04 and Debian 12
 
 ```bash
-sudo apt install clang libbz2-dev
+sudo apt install clang
 ```
 
 
