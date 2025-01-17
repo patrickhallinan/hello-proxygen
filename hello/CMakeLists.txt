@@ -7,9 +7,6 @@ add_executable(hello
 )
 
 
-find_library(BZ2_LIB bz2)
-
-
 target_link_libraries(hello
 PUBLIC
     proxygenhttpserver
@@ -37,8 +34,14 @@ PUBLIC
     zstd
     double-conversion
 
-    ${BZ2_LIB}
-
     boost_context
 )
+
+find_library(BZ2_LIB bz2)
+if(BZ2_LIB)
+target_link_libraries(hello
+PUBLIC
+    bz2
+)
+endif()
 
