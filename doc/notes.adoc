@@ -5,7 +5,7 @@
 NOTE: when clang was installed its libstdc++ dependency was missing.  This was very strange because gcc was working fine.
 
 ----
-sudo apt install clang libstdc++-14-dev   
+sudo apt install clang libstdc++-14-dev
 ----
 
 
@@ -18,7 +18,7 @@ This was a memory issue.  Increasing to 20GB fixed this.
 
 == building on debian 12 on chromebook
 
-There's a build optios to set the number of jobs.  With the number of jobs set to 1 it build on a chromebook.
+There's a build option to set the number of jobs.  With the number of jobs set to 1 it build on a chromebook.
 
 ----
 ./build.sh -j <number-of-jobs>

@@ -1,5 +1,5 @@
 # README
-  
+
 Tested on ubuntu 24.04 (wsl), Debian 12 Bookworm on a chromebook, and Rockly Linux 9 (red hat clone)
 
 
@@ -34,6 +34,8 @@ sudo apt install clang
 cd proxygen/proxygen && ./build.sh
 ```
 
+### Ubuntu
+
 With 16GB of RAM got this error and had to run `./build.sh` again.
 
 ```bash
@@ -43,6 +45,13 @@ compilation terminated.
 
 With 20GB proxygen fully built first time.
 
+### Debian on chromebook
+
+Set number of jobs option to 1
+
+```bash
+./build.sh -j <number-of-jobs>
+```
 
 ## build hello proxygen
 
