@@ -7,7 +7,7 @@ add_executable(hello
 )
 
 
-find_package(bz2 QUIET)
+find_library(BZ2_LIB bz2)
 
 
 target_link_libraries(hello
@@ -37,7 +37,7 @@ PUBLIC
     zstd
     double-conversion
 
-    $<IF:$<BOOL:${bz2_FOUND}>,bz2,>
+    ${BZ2_LIB}
 
     boost_context
 )
