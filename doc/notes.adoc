@@ -2,7 +2,7 @@
 
 == building on wsl - ubuntu 24.04
 
-NOTE: when clang was installed its libstdc++ dependency was missing.  This was very strange because gcc was working fine.
+NOTE: when clang was installed its libstdc++ dependency was missing.  This was strange because gcc was working fine.
 
 ----
 sudo apt install clang libstdc++-14-dev
@@ -11,7 +11,7 @@ sudo apt install clang libstdc++-14-dev
 
 == building proxygen on rocky linux 9
 
-NOTE: In last clean build on rocky linux had to build proxygen twice for it to complete successfully
+NOTE: In the last clean build on rocky linux failed to build the first time.
 
 This was a memory issue.  Increasing to 20GB fixed this.
 

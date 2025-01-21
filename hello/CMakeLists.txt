@@ -15,27 +15,41 @@ PUBLIC
     fizz
     folly
 
-    unwind
-    sodium
+    #unwind
+    #sodium
+    ${SODIUM_LDFLAGS}
 
     dl
-    event
-    iberty
+    #event
+    ${LIBEVENT_LIBRARIES}
+    #iberty
     pthread
     fmt
     glog
     gflags
-    ssl
+    #ssl
     lzma
-    lz4
-    snappy
-    crypto
+    #lz4
+    #snappy
+    ${SNAPPY_LIB}
+    #crypto
+    OpenSSL::SSL
+    OpenSSL::Crypto
+
+    #lz4
+    PkgConfig::lz4
+
     z
     zstd
-    double-conversion
+    double-conversion::double-conversion
 
-    boost_context
+    #boost_context
+    Boost::context
+
+    c++abi
 )
+
+
 
 
 # for rocky linux

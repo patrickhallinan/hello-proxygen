@@ -11,6 +11,12 @@ git clone --recurse-submodules  git@github.com:patrickhallinan/hello-proxygen
 
 ## install dependencies
 
+### mac
+
+```bash
+brew install pkg-config
+```
+
 ### Rocky Linux 9 (red hat clone)
 
 The proxygen build script `build.sh` installs dependencies for Linux with `apt` which doesn't work for Rocky Linux.
