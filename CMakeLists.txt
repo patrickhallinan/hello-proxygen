@@ -5,15 +5,11 @@ project (HelloProxygen)
 # for rtags
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# Detect if the system is macOS
+# macOS
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     set(CMAKE_CXX_STANDARD 17)
     set(CMAKE_CXX_STANDARD_REQUIRED ON)
     set(CMAKE_CXX_EXTENSIONS OFF)
-
-    # Optionally, for macOS, specify the C++ standard library
-    # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
-
 else()
     set(CMAKE_CXX_STANDARD 20)
     set(CMAKE_CXX_EXTENSIONS OFF)
@@ -46,24 +42,18 @@ endif()
 pkg_check_modules(lz4 REQUIRED IMPORTED_TARGET liblz4)
 
 
-find_package(gflags REQUIRED)
-if (gflags_FOUND)
-    include_directories(${gflags_INCLUDE_DIR})
-else()
-    message(FATAL_ERROR "gflags not found")
-endif()
-
-
 find_library(SNAPPY_LIB snappy)
 
 message("SNAPPY_LIBRARIES:  ${SNAPPY_LIB}")
 
 find_package(Boost REQUIRED)
-include_directories(${Boost_INCLUDE_DIRS})
-
-
 find_package(Boost REQUIRED COMPONENTS context)
+find_package(double-conversion REQUIRED)
+find_package(gflags REQUIRED)
 
+
+message("BOOST LIB DIR: ${Boost_LIBRARY_DIRS}")
+message("BOOST LIBRARY: ${Boost_LIBRARIES}")
 
 pkg_check_modules(GLOG REQUIRED libglog)
 if (GLOG_FOUND)
@@ -82,11 +72,6 @@ list(APPEND CMAKE_SYSTEM_LIBRARY_PATH
 
 pkg_check_modules(LIBEVENT REQUIRED libevent)
 
-#foreach(LIB_DIR ${LIBEVENT_LIBRARY_DIRS})
-#    link_directories(${LIB_DIR})
-#endforeach()
-
-find_package(double-conversion REQUIRED)
 
 include_directories(
 PUBLIC
@@ -94,6 +79,8 @@ PUBLIC
     proxygen/proxygen/_build/generated/
 SYSTEM
     proxygen/proxygen/_build/deps/include
+    ${Boost_INCLUDE_DIRS}
+    ${gflags_INCLUDE_DIR}
     ${GLOG_INCLUDE_DIRS}
     ${SODIUM_INCLUDE_DIRS}
     ${LIBEVENT_INCLUDE_DIRS}
@@ -102,17 +89,17 @@ SYSTEM
 
 link_directories(
     proxygen/proxygen/_build/deps/lib/
-    #proxygen/proxygen/_build/deps/lib64/
+    proxygen/proxygen/_build/deps/lib64/
     proxygen/proxygen/_build/proxygen/lib/
     proxygen/proxygen/_build/proxygen/lib/http/
     proxygen/proxygen/_build/proxygen/lib/services/
     proxygen/proxygen/_build/proxygen/lib/utils/
     proxygen/proxygen/_build/proxygen/httpserver/
 
-    ${LIBEVENT_LIBRARY_DIRS}
+    ${Boost_LIBRARY_DIRS}
     ${GLOG_LIBRARY_DIRS}
+    ${LIBEVENT_LIBRARY_DIRS}
 )
-
 
 
 add_subdirectory(hello)

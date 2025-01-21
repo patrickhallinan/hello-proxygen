@@ -6,50 +6,53 @@ add_executable(hello
     main.cpp
 )
 
-
-target_link_libraries(hello
-PUBLIC
+set(TARGET_LIBRARIES
     proxygenhttpserver
     proxygen
     wangle
     fizz
     folly
 
-    #unwind
-    #sodium
     ${SODIUM_LDFLAGS}
 
     dl
-    #event
     ${LIBEVENT_LIBRARIES}
-    #iberty
     pthread
     fmt
     glog
     gflags
-    #ssl
     lzma
-    #lz4
-    #snappy
     ${SNAPPY_LIB}
-    #crypto
     OpenSSL::SSL
     OpenSSL::Crypto
 
-    #lz4
     PkgConfig::lz4
 
     z
     zstd
     double-conversion::double-conversion
 
-    #boost_context
     Boost::context
-
-    c++abi
 )
 
 
+if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    list(APPEND TARGET_LIBRARIES
+        c++abi
+    )
+else()
+    #list(APPEND TARGET_LIBRARIES boost-context)
+    list(APPEND TARGET_LIBRARIES
+        unwind
+        iberty
+    )
+endif()
+
+
+target_link_libraries(hello
+PUBLIC
+    ${TARGET_LIBRARIES}
+)
 
 
 # for rocky linux
