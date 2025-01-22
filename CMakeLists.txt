@@ -30,47 +30,28 @@ set(CMAKE_PREFIX_PATH
 #include_directories(SYSTEM proxygen/proxygen/_build/deps/include)
 
 
-find_package(PkgConfig REQUIRED)
-
-
-find_package(OpenSSL REQUIRED)
-if(OPENSSL_FOUND)
-    include_directories(${OPENSSL_INCLUDE_DIR})
-endif()
-
-
-pkg_check_modules(lz4 REQUIRED IMPORTED_TARGET liblz4)
-
-
 find_library(SNAPPY_LIB snappy)
 
-message("SNAPPY_LIBRARIES:  ${SNAPPY_LIB}")
 
 find_package(Boost REQUIRED)
 find_package(Boost REQUIRED COMPONENTS context)
 find_package(double-conversion REQUIRED)
 find_package(gflags REQUIRED)
+find_package(OpenSSL REQUIRED)
 
+find_package(PkgConfig REQUIRED)
 
-message("BOOST LIB DIR: ${Boost_LIBRARY_DIRS}")
-message("BOOST LIBRARY: ${Boost_LIBRARIES}")
-
+pkg_check_modules(LIBEVENT REQUIRED libevent)
 pkg_check_modules(GLOG REQUIRED libglog)
-if (GLOG_FOUND)
-    include_directories(${GLOG_INCLUDE_DIRS})
-    link_directories(${GLOG_LIBRARY_DIRS})
-else()
-    message(FATAL_ERROR "glog not found")
-endif()
-
+pkg_check_modules(lz4 REQUIRED IMPORTED_TARGET liblz4)
 pkg_check_modules(SODIUM REQUIRED libsodium)
+
 
 list(APPEND CMAKE_SYSTEM_LIBRARY_PATH
     /usr/local/lib
-    ${GLOG_LIBRARY_DIRS}
+    # XXX IS THIS DOING ANYTHING???
+    #${GLOG_LIBRARY_DIRS}
 )
-
-pkg_check_modules(LIBEVENT REQUIRED libevent)
 
 
 include_directories(
@@ -82,6 +63,7 @@ SYSTEM
     ${Boost_INCLUDE_DIRS}
     ${gflags_INCLUDE_DIR}
     ${GLOG_INCLUDE_DIRS}
+    ${OPENSSL_INCLUDE_DIR}
     ${SODIUM_INCLUDE_DIRS}
     ${LIBEVENT_INCLUDE_DIRS}
 )

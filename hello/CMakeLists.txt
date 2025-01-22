@@ -50,7 +50,7 @@ endif()
 
 
 target_link_libraries(hello
-PUBLIC
+PRIVATE
     ${TARGET_LIBRARIES}
 )
 

@@ -51,7 +51,7 @@ endif()
 
 
 target_link_libraries(test
-PUBLIC
+PRIVATE
     ${TARGET_LIBRARIES}
 )
 
