@@ -11,7 +11,7 @@
 class HttpHandlerFactory : public proxygen::RequestHandlerFactory {
     thread_local static folly::EventBase* eb_;
 public:
-    // Called for each handler event base thread
+    // Called for each event base thread
     void onServerStart(folly::EventBase* eb) noexcept override {
         eb_ = eb;
         LOG(INFO) << "onServerStart()";

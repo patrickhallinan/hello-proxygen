@@ -40,9 +40,12 @@ void TransactionHandler::onEOM() noexcept {
     HttpResponse httpResponse{response_->getStatusCode(), std::move(body)};
 
     // XXX: If TransactionHandler owned the Promise we could skip the middle-man
-    // and send the response directly to the HttpClient user.
+    // and send the response directly to the HttpClient user instead of going
+    // thru the HttpClient
 
-    // FIXME: onError() can be called after onEOM()
+    // FIXME: onError() can be called after onEOM(). Maybe this should be handled
+    // in detachTransaction()? Something needs to be done because we cannot call
+    // both httpClient_->requestComplete() and httpClient_->onError()
     httpClient_->requestComplete(std::move(httpResponse));
 }
 

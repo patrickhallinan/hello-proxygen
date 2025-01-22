@@ -1,6 +1,6 @@
 # README
 
-Tested on ubuntu 24.04 (wsl), Debian 12 Bookworm on a chromebook, and Rockly Linux 9 (red hat clone)
+Tested on macOS Sonoma (14.7.1), ubuntu 24.04 (wsl), Debian 12 Bookworm on a chromebook, and Rockly Linux 9 (red hat clone)
 
 
 ## get repo

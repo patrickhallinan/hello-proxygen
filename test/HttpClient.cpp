@@ -23,7 +23,7 @@ HttpClient::HttpClient(EventBase* eb,
     , headers_{headers}
     , url_{proxygen::URL{url}} {
 
-    // uses HHWheelTimer of the EventBase
+    // uses HHWheelTimer from EventBase
     proxygen::WheelTimerInstance timer{defaultTimeout, eb};
 
     httpConnector_ = std::make_unique<proxygen::HTTPConnector>(this, timer);
@@ -47,10 +47,10 @@ folly::Future<folly::Unit> HttpClient::connect() {
 
 folly::Future<HttpResponse> HttpClient::GET() {
     auto transactionHandler = new TransactionHandler{this};
-    txn_ = session_->newTransaction(transactionHandler);
+    auto txn = session_->newTransaction(transactionHandler);
 
-    txn_->sendHeaders(createHttpMessage(proxygen::HTTPMethod::GET));
-    txn_->sendEOM();
+    txn->sendHeaders(createHttpMessage(proxygen::HTTPMethod::GET));
+    txn->sendEOM();
 
     requestPromise_.reset(new folly::Promise<HttpResponse>{});
     return requestPromise_->getFuture();
@@ -59,11 +59,11 @@ folly::Future<HttpResponse> HttpClient::GET() {
 
 folly::Future<HttpResponse> HttpClient::POST(const std::string& content) {
     auto transactionHandler = new TransactionHandler{this};
-    txn_ = session_->newTransaction(transactionHandler);
+    auto txn = session_->newTransaction(transactionHandler);
 
-    txn_->sendHeaders(createHttpMessage(proxygen::HTTPMethod::POST, content.size()));
-    txn_->sendBody(folly::IOBuf::copyBuffer(content));
-    txn_->sendEOM();
+    txn->sendHeaders(createHttpMessage(proxygen::HTTPMethod::POST, content.size()));
+    txn->sendBody(folly::IOBuf::copyBuffer(content));
+    txn->sendEOM();
 
     requestPromise_.reset(new folly::Promise<HttpResponse>{});
     return requestPromise_->getFuture();
@@ -126,15 +126,11 @@ void HttpClient::connectError(const folly::AsyncSocketException& e) {
 // REQUEST EVENT HANDLERS
 
 void HttpClient::requestComplete(HttpResponse httpResponse) noexcept {
-    // XXX: Is there any reason to save this? Not used by HttpClient
-    // after creating transaction.
-    txn_ = nullptr;
     requestPromise_->setValue(std::move(httpResponse));
 }
 
 
 void HttpClient::requestError(const proxygen::HTTPException& error) noexcept {
-    txn_ = nullptr;
     requestPromise_->setException(error);
 }
 
