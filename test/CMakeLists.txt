@@ -29,7 +29,6 @@ set(TARGET_LIBRARIES
     OpenSSL::Crypto
     z
     zstd
-    event
     ${LIBEVENT_LIBRARIES}
     double-conversion::double-conversion
 
