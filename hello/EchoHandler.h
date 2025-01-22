@@ -9,7 +9,6 @@ public:
         : eb_{eb}
     {}
 
-    // This will always be the first callback invoked on your handler.
     void onRequest(std::unique_ptr<proxygen::HTTPMessage> headers) noexcept override;
     void onBody(std::unique_ptr<folly::IOBuf> body) noexcept override;
     void onEOM() noexcept override;
@@ -18,10 +17,9 @@ public:
 
     /**
     * Invoked when request processing has been completed and nothing more
-    * needs to be done. This may be a good place to log some stats and
-    * clean up resources. This is distinct from onEOM() because it is
-    * invoked after the response is fully sent. Once this callback has been
-    * received, `downstream_` should be considered invalid.
+    * needs to be done. This is distinct from onEOM() because it is invoked
+    * after the response is fully sent. Once this callback has been received,
+    * `downstream_` should be considered invalid.
     */
     void requestComplete() noexcept override;
 
@@ -31,8 +29,7 @@ public:
     *
     * NOTE: Can be invoked at any time (except for before onRequest).
     *
-    * No more callbacks will be invoked after this. You should clean up after
-    * yourself.
+    * No more callbacks will be invoked after this.
     */
     void onError(proxygen::ProxygenError err) noexcept override;
 

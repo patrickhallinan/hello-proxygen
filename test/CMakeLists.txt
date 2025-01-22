@@ -8,33 +8,49 @@ add_executable(test
 )
 
 
-target_link_libraries(test
-PUBLIC
+set(TARGET_LIBRARIES
     proxygenhttpserver
     proxygen
     wangle
     fizz
     folly
 
-    unwind
-    sodium
+    ${SODIUM_LDFLAGS}
 
     dl
     gflags
     glog
     pthread
     fmt
-    ssl
+    OpenSSL::SSL
     lzma
-    lz4
-    snappy
-    crypto
+    PkgConfig::lz4
+    ${SNAPPY_LIB}
+    OpenSSL::Crypto
     z
     zstd
-    iberty
-    event
-    double-conversion
+    ${LIBEVENT_LIBRARIES}
+    double-conversion::double-conversion
 
-    boost_context
+    Boost::context
+)
+
+
+if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    list(APPEND TARGET_LIBRARIES
+        c++abi
+    )
+else()
+    #list(APPEND TARGET_LIBRARIES boost-context)
+    list(APPEND TARGET_LIBRARIES
+        unwind
+        iberty
+    )
+endif()
+
+
+target_link_libraries(test
+PRIVATE
+    ${TARGET_LIBRARIES}
 )
 

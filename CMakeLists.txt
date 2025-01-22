@@ -5,41 +5,69 @@ project (HelloProxygen)
 # for rtags
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# Set the C++ standard to C++20 for all targets
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_EXTENSIONS OFF)
-
-set(GCC_COMPILE_FLAGS "-Wfatal-errors -g")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_COMPILE_FLAGS}")
 
 set(CMAKE_CXX_COMPILER "clang++")
 set(CMAKE_C_COMPILER "clang")
 
-set(CMAKE_PREFIX_PATH
-    "proxygen/proxygen/_build/"
-)
+set(GCC_COMPILE_FLAGS "-Wfatal-errors -g")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_COMPILE_FLAGS}")
 
-# Suppress warnings for headers included
-# add_compile_options(-isystem /usr/include/openssl)
-include_directories(SYSTEM proxygen/proxygen/_build/deps/include)
+
+# There's a warning about using findBoost() which we are not doing.
+# This suppresses the warning.
+if(POLICY CMP0167)
+    cmake_policy(SET CMP0167 NEW)
+endif()
+
+
+find_library(SNAPPY_LIB snappy)
+
+find_package(Boost REQUIRED)
+find_package(Boost REQUIRED COMPONENTS context)
+find_package(double-conversion REQUIRED)
+find_package(gflags REQUIRED)
+find_package(OpenSSL REQUIRED)
+
+find_package(PkgConfig REQUIRED)
+
+pkg_check_modules(LIBEVENT REQUIRED libevent)
+pkg_check_modules(GLOG REQUIRED libglog)
+pkg_check_modules(lz4 REQUIRED IMPORTED_TARGET liblz4)
+pkg_check_modules(SODIUM REQUIRED libsodium)
+
 
 include_directories(
-PUBLIC
+SYSTEM
     proxygen/
-    proxygen/proxygen/_build/deps/include
     proxygen/proxygen/_build/generated/
+    proxygen/proxygen/_build/deps/include
+    ${Boost_INCLUDE_DIRS}
+    ${gflags_INCLUDE_DIR}
+    ${GLOG_INCLUDE_DIRS}
+    ${OPENSSL_INCLUDE_DIR}
+    ${SODIUM_INCLUDE_DIRS}
+    ${LIBEVENT_INCLUDE_DIRS}
 )
 
 
 link_directories(
     proxygen/proxygen/_build/deps/lib/
-    proxygen/proxygen/_build/deps/lib64/
     proxygen/proxygen/_build/proxygen/lib/
     proxygen/proxygen/_build/proxygen/lib/http/
     proxygen/proxygen/_build/proxygen/lib/services/
     proxygen/proxygen/_build/proxygen/lib/utils/
     proxygen/proxygen/_build/proxygen/httpserver/
+
+    ${Boost_LIBRARY_DIRS}
+    ${GLOG_LIBRARY_DIRS}
+    ${LIBEVENT_LIBRARY_DIRS}
 )
+
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/proxygen/proxygen/_build/deps/lib64/")
+    link_directories("${CMAKE_CURRENT_SOURCE_DIR}/proxygen/proxygen/_build/deps/lib64/")
+endif()
 
 
 add_subdirectory(hello)
