@@ -25,7 +25,6 @@ set(TARGET_LIBRARIES
     OpenSSL::SSL
     lzma
     PkgConfig::lz4
-    ${SNAPPY_LIB}
     OpenSSL::Crypto
     z
     zstd
