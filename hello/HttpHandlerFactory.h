@@ -31,7 +31,7 @@ public:
             << " HTTP/" << httpMessage->getProtocolString();
 
         httpMessage->getHeaders().forEach([](const std::string& header,
-                                              const std::string& val) {
+                                             const std::string& val) {
 
             LOG(INFO) << header << ": " << val;
         });

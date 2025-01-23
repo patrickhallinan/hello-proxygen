@@ -19,9 +19,6 @@ int main(int argc, char *argv[]) {
     } catch (const std::exception& e) {
         LOG(ERROR) << e.what();
         return 1;
-    } catch (...) {
-        LOG(ERROR) << "Unexpected exception caught in main()";
-        return 1;
     }
 
     return 0;
