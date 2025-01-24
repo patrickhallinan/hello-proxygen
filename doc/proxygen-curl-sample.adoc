@@ -4,7 +4,7 @@ endif::[]
 
 = proxygen curl sample
 
-This provides an idea of how the proxygen curl sample works.  It shows one path through the code.
+This provides an idea of how the proxygen curl sample works.  It demonstrates an HTTP GET request.
 
 
 ```bash

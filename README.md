@@ -5,6 +5,13 @@ This is a starter project for anyone interested in using [proxygen](https://gith
 Tested on macOS Sonoma (14.7.1), ubuntu 24.04 (on Windows 11 in a VM and in WSL), Debian 12 Bookworm on a chromebook, and Rockly Linux 9 (red hat clone)
 
 
+## Documentation
+
+- [proxygen's curl sample](https://github.com/patrickhallinan/hello-proxygen/blob/master/doc/proxygen-curl-sample.adoc)
+- [http client](https://github.com/patrickhallinan/hello-proxygen/blob/master/doc/http-client.adoc)
+- [test](https://github.com/patrickhallinan/hello-proxygen/blob/master/doc/test.adoc)
+
+
 ## get repo
 ```
 git clone --recurse-submodules  git@github.com:patrickhallinan/hello-proxygen
@@ -19,7 +26,7 @@ git clone --recurse-submodules  git@github.com:patrickhallinan/hello-proxygen
 brew install pkg-config
 ```
 
-### Rocky Linux 9 (red hat clone)
+### rocky linux 9 (red hat clone)
 
 The proxygen build script `build.sh` installs dependencies for Linux with `apt` which doesn't work for Rocky Linux.
 
@@ -27,7 +34,7 @@ The proxygen build script `build.sh` installs dependencies for Linux with `apt` 
 script/rocky-linux-9-deps.sh
 ```
 
-### Ubuntu 24.04 and Debian 12
+### ubuntu 24.04 and debian 12
 
 ```bash
 sudo apt install clang
@@ -42,7 +49,7 @@ sudo apt install clang
 cd proxygen/proxygen && ./build.sh
 ```
 
-### Ubuntu
+### ubuntu
 
 With 16GB of RAM got this error and had to run `./build.sh` again.
 
@@ -53,7 +60,7 @@ compilation terminated.
 
 With 20GB proxygen fully built first time.
 
-### Debian on chromebook
+### debian on chromebook
 
 Set number of jobs option to 1
 
@@ -61,7 +68,7 @@ Set number of jobs option to 1
 ./build.sh -j <number-of-jobs>
 ```
 
-## build hello proxygen
+## build hello-proxygen
 
 **From project root**
 

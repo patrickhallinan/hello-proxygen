@@ -24,7 +24,6 @@ public:
 
     proxygen::RequestHandler* onRequest(proxygen::RequestHandler* handler,
                                         proxygen::HTTPMessage* httpMessage) noexcept override {
-
         LOG(INFO) << "";
         LOG(INFO) << httpMessage->getMethodString()
             << " " << httpMessage->getPath()

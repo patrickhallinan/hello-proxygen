@@ -12,7 +12,7 @@ int main(int argc, char *argv[]) {
     FLAGS_logtostderr = true;
     FLAGS_minloglevel = 0;
 
-    folly::Init init(&argc, &argv); // calls google::InitGoogleLogging()
+    folly::Init init(&argc, &argv);
 
     try {
         run();

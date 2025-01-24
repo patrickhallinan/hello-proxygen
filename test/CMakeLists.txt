@@ -25,7 +25,6 @@ set(TARGET_LIBRARIES
     OpenSSL::SSL
     lzma
     PkgConfig::lz4
-    ${SNAPPY_LIB}
     OpenSSL::Crypto
     z
     zstd
@@ -41,7 +40,6 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
         c++abi
     )
 else()
-    #list(APPEND TARGET_LIBRARIES boost-context)
     list(APPEND TARGET_LIBRARIES
         unwind
         iberty
