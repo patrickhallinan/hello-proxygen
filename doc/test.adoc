@@ -6,29 +6,42 @@ endif::[]
 
 This uses the `HttpClient` to feature tests `hello` HTTP server.  The server returns "Hello" on a GET request and on a POST request echoes the posted content.
 
-The test works but the Test class is kind of useless.  A mental placeholder.  This is how the feature test is run:
+The test works but the Test class is kind of useless.  A mental placeholder.
 
+[options="header", cols="5,3"]
+|===
+|code   |notes
+//-------------
+a|
 [source, c++]
 ----
 void Test::run() {
-    eventBase_.runInEventBaseThread([http=httpClient_.get()]() {
-        return http->connect()
-                   .thenValue([http](folly::Unit) {
-                       return http->GET();
-                   })
-                   .thenValue([http](const HttpResponse& response) {
-                       assert_equal(response.status(), 200);
-                       assert_equal(response.content(), "Hello");
+  eventBase_.runInEventBaseThread([http=client_.get()]() {
+    return http->connect()
+      .thenValue([http](folly::Unit) {
+          return http->GET();
+      })
+      .thenValue([http](const HttpResponse& response) {
+          assert_equal(response.status(), 200);
+          assert_equal(response.content(), "Hello");
 
-                       return http->POST("Echo");
-                   })
-                   .thenValue([](const HttpResponse& response) {
-                       assert_equal(response.status(), 200);
-                       assert_equal(response.content(), "Echo");
-                   });
-    });
+          return http->POST("Echo");
+      })
+      .thenValue([](const HttpResponse& response) {
+          assert_equal(response.status(), 200);
+          assert_equal(response.content(), "Echo");
+      });
+  });
 }
-----
+
+a|
+* `Test::run()` puts a callback on the EventBase's queue. Later the event loop will dequeue and run the callback.
+* When the callback is run, `http->connect()` queues a callback the `EventBase's` queue and returns a `Future`
+* `.thenValue()` continuations are called on each `Future` which register callbacks and return `Future's`
+* `.thenError()` is not shown but any exception would cause `.then()'s` to be skipped and `.thenError()` to be called.
+
+|===
+
 
 Maybe something like this in the future?  Similar to link:https://github.com/cppfw/tst/blob/main/wiki/tutorial.adoc#declare-first-test-case[tst wiki]
 
