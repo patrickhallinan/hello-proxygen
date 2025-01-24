@@ -19,7 +19,6 @@ public:
 
 private:
     folly::EventBase& eventBase_;
-
     std::unique_ptr<HttpClient> httpClient_;
 };
 

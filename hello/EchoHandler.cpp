@@ -20,22 +20,29 @@ void EchoHandler::onBody(std::unique_ptr<folly::IOBuf> chunk) noexcept {
 
 
 void EchoHandler::onEOM() noexcept {
+    int statusCode;
+    std::string statusMessage;
+    std::string content;
+
     if (buf_) {
-        auto content = buf_->moveToFbString().toStdString();
+        statusCode = 200;
+        statusMessage = "OK";
+        content = buf_->moveToFbString().toStdString();
+
         LOG(INFO) << "";
         LOG(INFO) << content;
-
-        proxygen::ResponseBuilder(downstream_)
-            .status(200, "OK")
-            .body(content)
-            .sendWithEOM();
     } else {
-        proxygen::ResponseBuilder(downstream_)
-            .status(400, "Bad Request")
-            .body("CONTENT MISSING")
-            .sendWithEOM();
+        statusCode = 400;
+        statusMessage = "Bad Request";
+        content = "CONTENT MISSING";
     }
+
+    proxygen::ResponseBuilder(downstream_)
+        .status(statusCode, statusMessage)
+        .body(content)
+        .sendWithEOM();
 }
+
 
 void EchoHandler::onUpgrade(proxygen::UpgradeProtocol prot) noexcept {
 }

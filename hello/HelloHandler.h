@@ -9,7 +9,7 @@ public:
         : eb_{eb}
     {}
 
-    // This will always be the first callback invoked on your handler.
+    // onRequest() will always be the first callback invoked
     void onRequest(std::unique_ptr<proxygen::HTTPMessage> headers) noexcept override;
     void onBody(std::unique_ptr<folly::IOBuf> body) noexcept override;
     void onEOM() noexcept override;

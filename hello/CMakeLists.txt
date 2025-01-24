@@ -42,7 +42,6 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
         c++abi
     )
 else()
-    #list(APPEND TARGET_LIBRARIES boost-context)
     list(APPEND TARGET_LIBRARIES
         unwind
         iberty
@@ -50,18 +49,14 @@ else()
 endif()
 
 
+# for rocky linux
+find_library(BZ2_LIB bz2)
+if(BZ2_LIB)
+    list(APPEND TARGET_LIBRARIES bz2)
+endif()
+
+
 target_link_libraries(hello
 PRIVATE
     ${TARGET_LIBRARIES}
 )
-
-
-# for rocky linux
-find_library(BZ2_LIB bz2)
-if(BZ2_LIB)
-target_link_libraries(hello
-PUBLIC
-    bz2
-)
-endif()
-

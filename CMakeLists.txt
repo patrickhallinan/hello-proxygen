@@ -15,7 +15,8 @@ set(GCC_COMPILE_FLAGS "-Wfatal-errors -g")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_COMPILE_FLAGS}")
 
 
-# There's a warning about using findBoost() which we are not doing.
+# We are getting a warning for using findBoost() on some platforms
+# We should not because we are not using findBoost()???
 # This suppresses the warning.
 if(POLICY CMP0167)
     cmake_policy(SET CMP0167 NEW)

@@ -4,7 +4,9 @@ endif::[]
 
 = test
 
-The test works but the Test class is kind of useless.  A mental placeholder.
+This uses the `HttpClient` to feature tests `hello` HTTP server.  The server returns "Hello" on a GET request and on a POST request echoes the posted content.
+
+The test works but the Test class is kind of useless.  A mental placeholder.  This is how the feature test is run:
 
 [source, c++]
 ----
@@ -17,7 +19,7 @@ void Test::run() {
                    .thenValue([http](const HttpResponse& response) {
                        assert_equal(response.status(), 200);
                        assert_equal(response.content(), "Hello");
- 
+
                        return http->POST("Echo");
                    })
                    .thenValue([](const HttpResponse& response) {
@@ -88,7 +90,7 @@ main -> test : ctor{ eb, timer }
 
 test -> HttpClient : ctor{\n  EventBase,\n  defaultTimeout,\n  url,\n  headers }
 
-HttpClient -> HTTPConnector : ctor{ this, timer }        
+HttpClient -> HTTPConnector : ctor{ this, timer }
 
 main -> test : run()
 
@@ -153,7 +155,7 @@ HttpClient --> test : Future
 
 == GET response ==
 
-HTTPTransaction -> TransactionHandler : 
+HTTPTransaction -> TransactionHandler :
 
 HTTPTransaction -> TransactionHandler : onHeadersComplete( unique_ptr<proxygen::HTTPMessage> )
 

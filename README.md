@@ -68,7 +68,7 @@ Set number of jobs option to 1
 ./build.sh -j <number-of-jobs>
 ```
 
-## build hello proxygen
+## build hello-proxygen
 
 **From project root**
 
