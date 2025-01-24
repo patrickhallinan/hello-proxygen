@@ -20,7 +20,7 @@ int main(int argc, char* argv[]) {
     Test test(eventBase);
     test.run();
 
-    // Test does run until eventBase.loop()
+    // Test does not run until eventBase.loop()
     eventBase.loop();
 
     LOG(INFO) << "Exit main()\n";
