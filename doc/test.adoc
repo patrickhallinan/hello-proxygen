@@ -43,7 +43,7 @@ a|
 |===
 
 
-Maybe something like this in the future?  Similar to link:https://github.com/cppfw/tst/blob/main/wiki/tutorial.adoc#declare-first-test-case[tst wiki]
+Maybe something like this in the future?  Similar to link:https://github.com/cppfw/tst/blob/main/wiki/tutorial.adoc#declare-first-test-case[tst]
 
 [source, c++]
 ----
