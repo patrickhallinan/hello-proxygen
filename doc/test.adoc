@@ -6,6 +6,8 @@ endif::[]
 
 This uses the `HttpClient` to feature tests `hello` HTTP server.  The server returns "Hello" on a GET request and on a POST request echoes the posted content.
 
+== feature test
+
 The test works but the Test class is kind of useless.  A mental placeholder.
 
 [options="header", cols="5,3"]
@@ -71,8 +73,9 @@ TestSuite SomeName("tests", [](TestSuite& suite){
 });
 ----
 
+== uml
 
-== init
+=== init
 
 // github
 ifeval::["{docdir}" == ""]
@@ -115,7 +118,7 @@ main -> EventBase : loop()
 endif::[]
 
 
-== test ==
+=== test
 
 // github
 ifeval::["{docdir}" == ""]
@@ -206,3 +209,12 @@ HttpClient --> test : Future
 ----
 
 endif::[]
+
+
+== performance test
+
+run server with INFO logging turned off:
+
+```bash
+hello/hello --minloglevel=1
+```

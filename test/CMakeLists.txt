@@ -4,8 +4,16 @@ add_executable(test
     TransactionHandler.cpp
     Test.cpp
 
-    main.cpp
+    feature_test.cpp
 )
+
+
+#add_executable(performance
+#    HttpClient.cpp
+#    TransactionHandler.cpp
+#
+#    performance_test.cpp
+#)
 
 
 set(TARGET_LIBRARIES
