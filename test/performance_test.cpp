@@ -21,10 +21,6 @@ DEFINE_int32(payload_size, 2000, "number of bytes to send in each request");
 
 void performance_test(folly::EventBase*);
 
-folly::Future<folly::Unit> sendRequests(folly::EventBase* eventBase,
-                                        std::vector<HttpClient*> clients,
-                                        std::string& payload);
-
 // We really only need atomic<> if was have multiple event bases (i.e. threads)
 std::atomic<int> requestCount(0);
 
