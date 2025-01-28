@@ -213,8 +213,43 @@ endif::[]
 
 == performance test
 
-run server with INFO logging turned off:
+```
+folly/futures/Future-inl.h
+
+T Future<T>::get()
+Future<T>::ensure(F&& func)
+Future<T>::onTimeout(...)
+Future<T> makeFuture(Try<T> t)
+Future<T>::reduce()
+Future<T>::within(HighResDuration dur, Timekeeper* tk)
+Future<T> Future<T>::within(HighResDuration dur, E e, Timekeeper* tk)
+Future<T> Future<T>::delayed(HighResDuration dur, Timekeeper* tk)
+SemiFuture<T>& SemiFuture<T>::wait()
+ 
+```
+
+----
+Performance Variables
+================
+Number of threads
+Number of clients (i.e. number of connections)
+Size of payload
+Echo or Ack
+request lag on server
+
+Performance Metrics
+================
+Request time
+Request rate
+Bit rate
+Memory Footprint
+----
+
+example:
 
 ```bash
-hello/hello --minloglevel=1
+hello/hello --minloglevel=1  echo_request_lag=100
+
+- minloglevel: run server with INFO logging turned off:
+- echo_request_lag: number of milliseconds to wait before sending response
 ```

@@ -1,8 +1,12 @@
 #include "EchoHandler.h"
 
+#include <proxygen/httpserver/ResponseBuilder.h>
+
+#include <gflags/gflags.h>
 #include <glog/logging.h>
 
-#include <proxygen/httpserver/ResponseBuilder.h>
+
+DEFINE_int32(echo_request_lag, 0, "time in milliseconds to wait before sending response");
 
 
 void EchoHandler::onRequest(std::unique_ptr<proxygen::HTTPMessage> message) noexcept {
