@@ -23,3 +23,24 @@ There's a build option to set the number of jobs.  With the number of jobs set t
 ----
 ./build.sh -j <number-of-jobs>
 ----
+
+== Future<T> functions
+
+```
+folly/futures/Future-inl.h
+
+T Future<T>::get()
+Future<T>::ensure(F&& func)
+Future<T>::onTimeout(...)
+Future<T> makeFuture(Try<T> t)
+Future<T>::reduce()
+Future<T>::within(HighResDuration dur, Timekeeper* tk)
+Future<T> Future<T>::within(HighResDuration dur, E e, Timekeeper* tk)
+Future<T> Future<T>::delayed(HighResDuration dur, Timekeeper* tk)
+
+SemiFuture<T>& SemiFuture<T>::wait()
+SemiFuture<int>::defer()
+ 
+folly/futures/ThreadWheelTimekeeper.h
+class ThreadWheelTimekeeper : public Timekeeper
+```

@@ -1,0 +1,43 @@
+= performance test
+
+== usage
+
+=== start server
+
+```bash
+hello/hello --minloglevel=1 --echo_request_lag=50
+
+- minloglevel: run server with INFO logging turned off (INFO=0, WARN=1, ERROR=2)
+- echo_request_lag: milliseconds to wait before sending response (default=0)
+```
+
+=== run performance test
+
+```bash
+test/performance --number_of_requests=100 --num_connections=10
+
+parameters:
+
+target_host - Host or IP address
+target_port - Host port
+num_connections
+number_of_requests
+payload_size - number of bytes to send in each request
+```
+
+
+----
+Performance Variables
+================
+Number of threads - not implemented
+Number of clients - FLAGS_num_connections
+Size of payload - FLAGS_payload_size
+Echo or Ack with checksum - only echo for now
+
+Performance Metrics
+================
+Request time
+Request rate
+Bit rate
+Memory Footprint - not measured
+----

@@ -41,10 +41,39 @@ void EchoHandler::onEOM() noexcept {
         content = "CONTENT MISSING";
     }
 
-    proxygen::ResponseBuilder(downstream_)
-        .status(statusCode, statusMessage)
-        .body(content)
-        .sendWithEOM();
+    auto sendResponse = [this, statusCode, statusMessage, content](){
+        proxygen::ResponseBuilder(downstream_)
+            .status(statusCode, statusMessage)
+            .body(content)
+            .sendWithEOM();
+    };
+
+    using namespace folly;
+    using namespace std;
+
+    if (FLAGS_echo_request_lag > 0) {
+        // ensure that Timekeeper is initialized
+        static auto tk = folly::detail::getTimekeeperSingleton();
+
+        static auto ms = chrono::milliseconds(FLAGS_echo_request_lag);
+        static std::atomic<int> count = 0;
+
+        auto p = make_shared<Promise<Unit>>();
+
+        // p must stay alive until continuation is run
+
+        p->getFuture()
+            .via(eb_)
+            .delayed(ms)
+            .thenValue([p, send=std::move(sendResponse)](folly::Unit) {
+                send();
+            });
+
+        p->setValue(folly::unit);
+
+    } else {
+        sendResponse();
+    }
 }
 
 

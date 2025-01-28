@@ -16,7 +16,7 @@ DEFINE_string(target_host, "127.0.0.1", "IP address");
 DEFINE_int32(target_port, 8080, "HTTP port");
 
 DEFINE_int32(num_connections, 16, "should be a power of 2");
-DEFINE_int32(number_of_requests, 100000, "number of http requests");
+DEFINE_int32(number_of_requests, 100, "number of http requests");
 DEFINE_int32(payload_size, 2000, "number of bytes to send in each request");
 
 void performance_test(folly::EventBase*);
@@ -25,22 +25,8 @@ folly::Future<folly::Unit> sendRequests(folly::EventBase* eventBase,
                                         std::vector<HttpClient*> clients,
                                         std::string& payload);
 
-// We really only need atomic if was have multiple event bases (i.e. threads)
+// We really only need atomic<> if was have multiple event bases (i.e. threads)
 std::atomic<int> requestCount(0);
-
-
-// Dimensions
-// ================
-// Number of threads - not implemented
-// Number of clients (i.e. number of connections) - not implemented
-// Size of payload - FLAGS_payload_size
-// Echo or Ack - not implemented
-//
-// Results
-// ================
-// Request time
-// Request rate
-// Bit rate
 
 
 int main(int argc, char* argv[]) {
@@ -66,8 +52,10 @@ int main(int argc, char* argv[]) {
 folly::Future<HttpClient*> send(HttpClient* client, std::string& payload) {
     return client->POST(payload)
         .thenValue([client, &payload](const HttpResponse& response) -> folly::Future<HttpClient*> {
-            if (++requestCount < FLAGS_number_of_requests)
+
+            if (++requestCount <= FLAGS_number_of_requests)
                 return send(client, payload);
+
             return folly::makeFuture(client);
         });
 }
