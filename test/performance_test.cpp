@@ -10,6 +10,7 @@
 #include <atomic>
 #include <chrono>
 #include <cstdlib>
+#include <random>
 
 
 DEFINE_string(target_host, "127.0.0.1", "IP address");
@@ -18,8 +19,11 @@ DEFINE_int32(target_port, 8080, "HTTP port");
 DEFINE_int32(num_connections, 16, "should be a power of 2");
 DEFINE_int32(number_of_requests, 100, "number of http requests");
 DEFINE_int32(payload_size, 2000, "number of bytes to send in each request");
+DEFINE_bool(validate_content, false, "verify response content equals request content");
+
 
 void performance_test(folly::EventBase*);
+
 
 // We really only need atomic<> if was have multiple event bases (i.e. threads)
 std::atomic<int> requestCount(0);
@@ -49,7 +53,17 @@ folly::Future<HttpClient*> send(HttpClient* client, std::string& payload) {
     return client->POST(payload)
         .thenValue([client, &payload](const HttpResponse& response) -> folly::Future<HttpClient*> {
 
-            if (++requestCount <= FLAGS_number_of_requests)
+            if (response.status() != 200)
+                LOG(FATAL) << "received invalid status code from host" << response.status();
+
+            // I don't think there would be any value added to log the random payload
+            if (FLAGS_validate_content && response.content() != payload)
+                LOG(FATAL) << "invalid response from host. expected size=" << payload.size()
+                           << ", actual size=" << response.content().size()
+                           << ", content: " << std::endl
+                           << response.content() << std::endl;
+
+            if (requestCount++ < FLAGS_number_of_requests)
                 return send(client, payload);
 
             return folly::makeFuture(client);
@@ -89,8 +103,17 @@ proxygen::HTTPHeaders httpHeaders() {
 
 std::string makePayload(int size) {
     std::string payload;
-    for (int i = 0 ; i < FLAGS_payload_size ; i++)
-        payload.push_back('a');
+
+    static const std::string characters{ "abcdefghijklmnopqrstuvwxyz"
+                                         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                                         "0123456789" };
+
+    std::mt19937 random_number_generator{ std::random_device{}() };
+    std::uniform_int_distribution<int> distribution(0, characters.size() - 1);
+
+    for (int i = 0 ; i < size ; i++)
+        payload += characters[distribution(random_number_generator)];
+
     return payload;
 }
 
@@ -101,7 +124,10 @@ folly::Future< std::vector<HttpClient*> > getClients(folly::EventBase* eventBase
     std::vector<HttpClient*> clients;
     std::vector<folly::Future<folly::Unit>> connectFutures;
 
+
     auto url = fmt::format("http://{}:{}/", FLAGS_target_host, FLAGS_target_port);
+
+    LOG(INFO) << "Connecting to: " << url;
 
     for (int i = 0 ; i < count ; i++) {
 
@@ -140,30 +166,32 @@ void performance_test(folly::EventBase* eventBase) {
 
             clients = httpClients;
             payload = makePayload(FLAGS_payload_size);
+
             start = std::chrono::high_resolution_clock::now();
 
             return sendRequests(eventBase, clients, payload);
         })
         .thenValue([](folly::Unit) {
+
             auto end = std::chrono::high_resolution_clock::now();
+
             std::chrono::duration<double, std::milli> duration = end - start;
 
-            const long ONE_MEG = 0x100000;
             double seconds = duration.count() / 1000.0;
-            double requestRate = FLAGS_number_of_requests / seconds;
             double averageRequestTime = duration.count() / FLAGS_number_of_requests;
-            double bitRate = 8 * FLAGS_payload_size * FLAGS_number_of_requests / seconds
-                             / ONE_MEG;
-
+            double requestRate = FLAGS_number_of_requests / seconds;
+            double mbps = requestRate * 8 * FLAGS_payload_size / (1024*10240);
 
             LOG(INFO) << "";
-            LOG(INFO) << "took " << duration.count() / 1000.0 << " seconds"
-                      << " to send " << FLAGS_number_of_requests
-                      << " with " << clients.size() << " connections";
+            LOG(INFO) << "sent " << FLAGS_number_of_requests << " HTTP POST requests";
+            LOG(INFO) << "total time       : " << seconds << " seconds";
 
-            LOG(INFO) << "request rate     : " << requestRate << " requests/second";
+            LOG(INFO) << "content size     : " << FLAGS_payload_size << " bytes";
+            LOG(INFO) << "num connections  : " << clients.size() << " connections";
+
             LOG(INFO) << "avg request Time : " << averageRequestTime << " ms";
-            LOG(INFO) << "bit rate         : " << bitRate << " Mbps";
+            LOG(INFO) << "request rate     : " << requestRate << " requests/second";
+            LOG(INFO) << "bit rate         : " << mbps << " Mbps";
 
             for (auto& client : clients)
                 delete client;

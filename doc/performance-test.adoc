@@ -1,31 +1,84 @@
 = performance test
 
+This uses POST requests with a random payload to test the hello server.     
+
 == usage
 
 === start server
 
+Example of staring server with INFO logging turned off and a response delay of 50 milliseconds.
+
 ```bash
 hello/hello --minloglevel=1 --echo_request_lag=50
+```
 
-- minloglevel: run server with INFO logging turned off (INFO=0, WARN=1, ERROR=2)
-- echo_request_lag: milliseconds to wait before sending response (default=0)
+parameters:
+
+```
+minloglevel: run server with INFO logging turned off (INFO=0, WARN=1, ERROR=2)
+echo_request_lag: milliseconds to wait before sending response (default=0)
 ```
 
 === run performance test
 
+localhost:
+
 ```bash
 test/performance --number_of_requests=100 --num_connections=10
-
-parameters:
-
-target_host - Host or IP address
-target_port - Host port
-num_connections
-number_of_requests
-payload_size - number of bytes to send in each request
 ```
 
+remote host:
 
+NOTE: Ensure the firewall is open.  Can be verified with: `telnet <ip> <port>`
+
+```bash
+test/performance --target_host=192.168.1.107 --target_port=8080 --number_of_requests=1 --number_of_requests=10000
+```
+
+example output:
+
+```
+I20250129 12:30:01.774626 37716 performance_test.cpp:130] Connecting to: http://192.168.1.107:8080/
+I20250129 12:30:01.813060 37716 performance_test.cpp:151] All HttpClient's connected
+I20250129 12:30:21.694345 37716 performance_test.cpp:185]
+I20250129 12:30:21.694392 37716 performance_test.cpp:186] sent 10000 HTTP POST requests in 19.8809 seconds
+I20250129 12:30:21.694427 37716 performance_test.cpp:189] content size     : 2000 bytes
+I20250129 12:30:21.694430 37716 performance_test.cpp:190] num connections  : 16 connections
+I20250129 12:30:21.694453 37716 performance_test.cpp:192] avg request Time : 1.98809 ms
+I20250129 12:30:21.694461 37716 performance_test.cpp:193] request rate     : 502.994 requests/second
+I20250129 12:30:21.694465 37716 performance_test.cpp:194] bit rate         : 0.767508 Mbps
+```
+
+==== parameters
+
+```
+target_host - Host or IP address
+target_port - Host port
+num_connections - number of HttpClients to use for load testing
+number_of_requests - number of requests
+payload_size - number of bytes to send in the body of each request
+```
+
+=== results
+
+
+
+=== factors affecting performance
+
+How you can be misled by performance testing:
+
+==== payload size
+
+It's important to test with a payload that is representative of actual payloads.  If you test with 10 bytes and the actually payload is around 16k your numbers will be off.
+
+Performance should also be tested with a max payload.  
+
+==== response validation
+
+ An overloaded server can do unexpected things.  Like short circuit its normal processing and send back a warning message.  I forget which tool we used but I was involved in some testing where this exact thing happened and we had impossible request rate numbers.
+
+
+==== response validation
 ----
 Performance Variables
 ================

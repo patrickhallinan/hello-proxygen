@@ -102,5 +102,5 @@ curl http://localhost:8080
 ```
 
 ```bash
-curl -X POST -d "nacho" http://localhost:8080
+curl -X POST -d "echo" http://localhost:8080
 ```
