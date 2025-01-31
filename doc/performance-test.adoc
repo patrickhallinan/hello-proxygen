@@ -70,8 +70,6 @@ I20250130 19:49:34.266290 71890 performance_test.cpp:210] bit rate         : 0.2
 
 ==== parameters
 
-
-
 ```
 target_host - Host or IP address
 target_port - Host port
@@ -102,7 +100,7 @@ if __name__ == '__main__':
     port = 8080
     number_of_requests = 1000
     payload_size = 1000
-    num_connections = 16 
+    num_connections = 16
 ```
 
 Then edit this line to ramp the variable you are interest in:
@@ -121,7 +119,7 @@ Then edit this line to ramp the variable you are interest in:
 
 [options="header"]
 |===
-|request rate as a function of connections  |request rate plot   
+|request rate as a function of connections  |request rate plot
 //-------------
 a|
 ----
@@ -137,7 +135,7 @@ payload      min     mean      max
 ----
 
 a|
-image::request-rate-vs-payload.png[]   
+image::request-rate-vs-payload.png[]
 |===
 
 
@@ -152,7 +150,7 @@ ulimit -n <max-connections>
 
 [options="header"]
 |===
-|request rate as a function of connections  |plot of mean values   
+|request rate as a function of connections  |plot of mean values
 //-------------
 a|
 ----
@@ -173,9 +171,8 @@ num_connections   min   mean   max
 ----
 
 a|
-image::request-rate-vs-connection-count.png[]   
+image::request-rate-vs-connection-count.png[]
 |===
-
 
 
 === factors affecting performance testing
@@ -186,7 +183,7 @@ There can be a startup cost that impacts performance numbers which is the  case 
 
 This could be further mitigated by changing the code to send some initial requests that are not part of the metrics.
 
-It would also be a good idea to measure the individual request times to get an idea of distribution. 
+It would also be a good idea to measure the individual request times to get an idea of distribution.
 
 ==== payload size
 
