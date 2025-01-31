@@ -78,6 +78,7 @@ std::string makePayload(int size) {
 
 
 folly::Future<HttpClient*> send(HttpClient* client, std::string& payload) {
+
     return client->POST(payload)
         .thenValue([client, &payload](const HttpResponse& response) -> folly::Future<HttpClient*> {
 
@@ -90,8 +91,9 @@ folly::Future<HttpClient*> send(HttpClient* client, std::string& payload) {
                            << ", content: " << std::endl
                            << response.content() << std::endl;
 
-            if (requestCount++ < FLAGS_number_of_requests)
+            if (requestCount++ < FLAGS_number_of_requests) {
                 return send(client, payload);
+            }
 
             return folly::makeFuture(client);
         });
@@ -218,7 +220,7 @@ void performance_test(folly::EventBase* eventBase) {
     getClients(eventBase, FLAGS_num_connections)
         .thenValue([eventBase](std::vector<HttpClient*> httpClients) {
 
-            auto payload = makePayload(FLAGS_payload_size);
+            static std::string payload = makePayload(FLAGS_payload_size);
 
             start = std::chrono::high_resolution_clock::now();
 
