@@ -48,6 +48,35 @@ int main(int argc, char* argv[]) {
 }
 
 
+proxygen::HTTPHeaders httpHeaders() {
+    proxygen::HTTPHeaders headers;
+
+    auto host = fmt::format("{}:{}", FLAGS_target_host, FLAGS_target_port);
+    headers.add(proxygen::HTTP_HEADER_HOST, host);
+    headers.add(proxygen::HTTP_HEADER_USER_AGENT, "test-client");
+    headers.add(proxygen::HTTP_HEADER_ACCEPT, "*/*");
+
+    return headers;
+}
+
+
+std::string makePayload(int size) {
+    std::string payload;
+
+    static const std::string characters{ "abcdefghijklmnopqrstuvwxyz"
+                                         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                                         "0123456789" };
+
+    std::mt19937 random_number_generator{ std::random_device{}() };
+    std::uniform_int_distribution<int> distribution(0, characters.size() - 1);
+
+    for (int i = 0 ; i < size ; i++)
+        payload += characters[distribution(random_number_generator)];
+
+    return payload;
+}
+
+
 folly::Future<HttpClient*> send(HttpClient* client, std::string& payload) {
     return client->POST(payload)
         .thenValue([client, &payload](const HttpResponse& response) -> folly::Future<HttpClient*> {
@@ -76,6 +105,7 @@ folly::Future<folly::Unit> sendRequests(folly::EventBase* eventBase,
     std::vector<folly::Future<HttpClient*>> clientFutures;
 
     for (auto* client : clients) {
+    	// note: send() does not block
         clientFutures.push_back(send(client, payload));
     }
 
@@ -86,34 +116,6 @@ folly::Future<folly::Unit> sendRequests(folly::EventBase* eventBase,
         });
 }
 
-
-proxygen::HTTPHeaders httpHeaders() {
-    proxygen::HTTPHeaders headers;
-
-    auto host = fmt::format("{}:{}", FLAGS_target_host, FLAGS_target_port);
-    headers.add(proxygen::HTTP_HEADER_HOST, host);
-    headers.add(proxygen::HTTP_HEADER_USER_AGENT, "test-client");
-    headers.add(proxygen::HTTP_HEADER_ACCEPT, "*/*");
-
-    return headers;
-}
-
-
-std::string makePayload(int size) {
-    std::string payload;
-
-    static const std::string characters{ "abcdefghijklmnopqrstuvwxyz"
-                                         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                                         "0123456789" };
-
-    std::mt19937 random_number_generator{ std::random_device{}() };
-    std::uniform_int_distribution<int> distribution(0, characters.size() - 1);
-
-    for (int i = 0 ; i < size ; i++)
-        payload += characters[distribution(random_number_generator)];
-
-    return payload;
-}
 
 
 // Originally client->connect() was called on all the clients and folly::collectAll()

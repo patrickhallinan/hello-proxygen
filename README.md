@@ -9,7 +9,8 @@ Tested on macOS Sonoma (14.7.1), ubuntu 24.04 (on Windows 11 in a VM and in WSL)
 
 - [proxygen's curl sample](https://github.com/patrickhallinan/hello-proxygen/blob/master/doc/proxygen-curl-sample.adoc)
 - [http client](https://github.com/patrickhallinan/hello-proxygen/blob/master/doc/http-client.adoc)
-- [test](https://github.com/patrickhallinan/hello-proxygen/blob/master/doc/test.adoc)
+- [feature test](https://github.com/patrickhallinan/hello-proxygen/blob/master/doc/feature-test.adoc)
+- [performance test](https://github.com/patrickhallinan/hello-proxygen/blob/master/doc/performance-test.adoc)
 
 
 ## get repo

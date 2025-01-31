@@ -39,10 +39,10 @@ folly::Future<folly::Unit> HttpClient::connect() {
 
     static const folly::SocketOptionMap socketOptions{{{SOL_SOCKET, SO_REUSEADDR}, 1}};
 
-    // Must initialize connectPromise before connect() because connect() can fail
-    // and call HttpClient::connectError() before http_Connector_->connect()
-    // finishes.  For example, this will happen if HTTPConnector fails to create
-    // a socket because the socket limit is too low.
+    // Must initialize connectPromise before HttpClient::connect() because
+    // HttpClient::connect() can fail and call HttpClient::connectError()
+    // before http_Connector_->connect() finishes.  For example, this will
+    // happen if HTTPConnector fails to create a socket.
     connectPromise_.reset(new folly::Promise<folly::Unit>{});
 
     // reset() ensures HTTPConnector is ready for subsequent connections.
@@ -119,7 +119,8 @@ void HttpClient::connectSuccess(HTTPUpstreamSession* session) {
     if (FLAGS_log_connect_time) {
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double, std::milli> connectTime = end - connectStartTime_;
-        LOG(INFO) << "HttpClient connect time (milliseconds): " << connectTime.count();
+        LOG(INFO) << "HttpClient connect time: "
+            << connectTime.count() << " milliseconds";
     }
 
     if (url_.isSecure()) {

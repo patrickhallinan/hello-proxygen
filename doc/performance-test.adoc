@@ -1,33 +1,49 @@
+ifeval::["{docdir}" != ""]
+:imagesdir: D:\hello\doc\image
+endif::[]
+
+ifeval::["{docdir}" == ""]
+:imagesdir: image
+endif::[]
+
 = performance test
 
-This was made to performance test `hello` server.  It uses POST requests with a random payload.     
+This uses POST requests to test the performance of `hello` server. POST requests
+to `hello` server are echoed back so the bit rate is bidirectional, though it
+does not include HTTP overhead.
 
 == usage
 
 === start server
 
-Example of staring server with INFO logging turned off and a response delay of 50 milliseconds.
+Starting with INFO logging off:
 
 ```bash
-hello/hello --minloglevel=1 --echo_request_lag=50
+hello/hello --minloglevel=1
+```
+
+Starting with INFO logging off and a response delay of 100 milliseconds:
+
+```bash
+hello/hello --minloglevel=1 --echo_request_lag=100
 ```
 
 parameters:
 
 ```
-minloglevel: run server with INFO logging turned off (INFO=0, WARN=1, ERROR=2)
+minloglevel: set lowest allowable log level (INFO=0, WARN=1, ERROR=2)
 echo_request_lag: milliseconds to wait before sending response (default=0)
 ```
 
 === run performance test
 
-localhost:
+==== localhost
 
 ```bash
 test/performance --number_of_requests=100 --num_connections=10
 ```
 
-remote host:
+==== remote host
 
 NOTE: Ensure the firewall is open.  Can be verified with: `telnet <ip> <port>`
 
@@ -37,7 +53,7 @@ test/performance --target_host=192.168.1.107 --target_port=8080 \
   --connect_timeout=5000
 ```
 
-example output:
+output example:
 
 ```
 I20250130 19:49:24.113564 71890 performance_test.cpp:172] Connecting to: http://192.168.1.107:8080/
@@ -54,6 +70,8 @@ I20250130 19:49:34.266290 71890 performance_test.cpp:210] bit rate         : 0.2
 
 ==== parameters
 
+
+
 ```
 target_host - Host or IP address
 target_port - Host port
@@ -61,57 +79,121 @@ num_connections - number of HttpClients to use for load testing
 number_of_requests - number of requests
 payload_size - number of bytes to send in the body of each request
 connect_timeout - number of milliseconds to wait for an HttpClient to connect
+validate_content - verify response content equals request content
 ```
 
-=== results
+=== ramp script
 
+This is alpha quality.  The script's values needs to be modified for any given use case.
 
+==== copy script to build directory
 
-==== payload
+from build directory
 
-==== number of connections
-
-ensure that the number of socket connections is above your testing values on BOTH the client and server machines.
-
+```bash
+cp ../script/ramp.py .
 ```
+
+==== edit script
+
+```python
+if __name__ == '__main__':
+    host = "192.168.1.107"
+    port = 8080
+    number_of_requests = 1000
+    payload_size = 1000
+    num_connections = 16 
+```
+
+Then edit this line to ramp the variable you are interest in:
+
+```python
+    for num_connections in [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]:
+```
+
+==== run script
+
+```bash
+./ramp.py
+```
+
+==== request rate vs payload
+
+[options="header"]
+|===
+|request rate as a function of connections  |request rate plot   
+//-------------
+a|
+----
+number of connections=16, request count=10000
+
+payload      min     mean      max
+     1      900.4   1086.8   1224.9
+    10      794.6    974.9   1116.5
+   100      782.2    909.2   1090.8
+  1000      556.9    673.6    802.0
+ 10000      100.6    109.1    121.1
+100000       10.9     11.5     12.5
+----
+
+a|
+image::request-rate-vs-payload.png[]   
+|===
+
+
+==== request rate vs number of connections
+
+Ensure that the number of socket connections available on your systems is above your testing values on BOTH the client and server machines.  In linux this can be set by:
+
+```bash
 ulimit -n <max-connections>
 ```
 
-example:
 
-```
-ulimit -n 100000
-```
+[options="header"]
+|===
+|request rate as a function of connections  |plot of mean values   
+//-------------
+a|
+----
+payload=10000 bytes, request count=10000
+
+num_connections   min   mean   max
+        1          64    68     71
+        2          94    99    103
+        4         128    138   144
+        8         152    157   165
+       16         149    159   176
+       32         145    159   167
+       64         143    154   168
+       128        146    153   158
+       256        157    162   175
+       512        163    172   180
+      1024        123    134   145
+----
+
+a|
+image::request-rate-vs-connection-count.png[]   
+|===
 
 
-=== factors affecting performance
 
-How you can be misled by performance testing:
+=== factors affecting performance testing
+
+==== number of requests
+
+There can be a startup cost that impacts performance numbers which is the  case for this application.  Sending a 1 request can be a comparable amount of time as sending 100 or even 1000 requests.  This cost can be minimized by a have a sufficient number of requests.  For example, if there is a 5 second cost then with 1 request this add five seconds to the average request time but with 1000 requests it add 1 millisecond to the average.
+
+This could be further mitigated by changing the code to send some initial requests that are not part of the metrics.
+
+It would also be a good idea to measure the individual request times to get an idea of distribution. 
 
 ==== payload size
 
-It's important to test with a payload that is representative of actual payloads.  If you test with 10 bytes and the actually payload is around 16k your numbers will be off.
-
-Performance should also be tested with a max payload.  
+It's important to test with a payload that is representative of actual payloads.  If you test with 10 bytes and the actual payload is around 16k then your numbers will be off.
 
 ==== response validation
 
- An overloaded server can do unexpected things.  Like short circuit its normal processing and send back a warning message.  I forget which tool we used but I was involved in some testing where this exact thing happened and we had impossible request rate numbers.
+An overloaded server can do unexpected things.  Like short circuit its normal processing and send back a warning message.  I forget which tool was used but I was involved in testing where this exact thing happened and we had very misleading request rate numbers.
 
-
-==== response validation
-----
-Performance Variables
-================
-Number of threads - not implemented
-Number of clients - FLAGS_num_connections
-Size of payload - FLAGS_payload_size
-Echo or Ack with checksum - only echo for now
-
-Performance Metrics
-================
-Request time
-Request rate
-Bit rate
-Memory Footprint - not measured
-----
+The `--validate_content` flag ensures that the server is echoing back the payload correctly.
