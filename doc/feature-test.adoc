@@ -2,9 +2,11 @@ ifeval::["{docdir}" == ""]
 :imagesdir: image
 endif::[]
 
-= test
+= feature-test
 
 This uses the `HttpClient` to feature tests `hello` HTTP server.  The server returns "Hello" on a GET request and on a POST request echoes the posted content.
+
+== example
 
 The test works but the Test class is kind of useless.  A mental placeholder.
 
@@ -71,8 +73,9 @@ TestSuite SomeName("tests", [](TestSuite& suite){
 });
 ----
 
+== uml
 
-== init
+=== init
 
 // github
 ifeval::["{docdir}" == ""]
@@ -115,7 +118,7 @@ main -> EventBase : loop()
 endif::[]
 
 
-== test ==
+=== test
 
 // github
 ifeval::["{docdir}" == ""]
@@ -206,3 +209,4 @@ HttpClient --> test : Future
 ----
 
 endif::[]
+

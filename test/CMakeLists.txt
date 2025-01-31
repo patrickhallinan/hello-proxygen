@@ -4,7 +4,15 @@ add_executable(test
     TransactionHandler.cpp
     Test.cpp
 
-    main.cpp
+    feature_test.cpp
+)
+
+
+add_executable(performance
+    HttpClient.cpp
+    TransactionHandler.cpp
+
+    performance_test.cpp
 )
 
 
@@ -48,6 +56,12 @@ endif()
 
 
 target_link_libraries(test
+PRIVATE
+    ${TARGET_LIBRARIES}
+)
+
+
+target_link_libraries(performance
 PRIVATE
     ${TARGET_LIBRARIES}
 )
