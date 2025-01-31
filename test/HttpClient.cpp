@@ -39,9 +39,10 @@ folly::Future<folly::Unit> HttpClient::connect() {
 
     static const folly::SocketOptionMap socketOptions{{{SOL_SOCKET, SO_REUSEADDR}, 1}};
 
-    // Must initialize connectPromise because connect() can fail and call
-    // HttpClient::connectError() before http_Connector_->connect() finishes.
-    // For example, if creating a socket fails because ulimit is too low.
+    // Must initialize connectPromise before connect() because connect() can fail
+    // and call HttpClient::connectError() before http_Connector_->connect()
+    // finishes.  For example, this will happen if HTTPConnector fails to create
+    // a socket because the socket limit is too low.
     connectPromise_.reset(new folly::Promise<folly::Unit>{});
 
     // reset() ensures HTTPConnector is ready for subsequent connections.

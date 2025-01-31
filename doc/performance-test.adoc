@@ -1,6 +1,6 @@
 = performance test
 
-This uses POST requests with a random payload to test the hello server.     
+This was made to performance test `hello` server.  It uses POST requests with a random payload.     
 
 == usage
 
@@ -32,21 +32,24 @@ remote host:
 NOTE: Ensure the firewall is open.  Can be verified with: `telnet <ip> <port>`
 
 ```bash
-test/performance --target_host=192.168.1.107 --target_port=8080 --number_of_requests=1 --number_of_requests=10000
+test/performance --target_host=192.168.1.107 --target_port=8080 \
+  --num_connections=500 --number_of_requests=1000 --payload_size=100 \
+  --connect_timeout=5000
 ```
 
 example output:
 
 ```
-I20250129 12:30:01.774626 37716 performance_test.cpp:130] Connecting to: http://192.168.1.107:8080/
-I20250129 12:30:01.813060 37716 performance_test.cpp:151] All HttpClient's connected
-I20250129 12:30:21.694345 37716 performance_test.cpp:185]
-I20250129 12:30:21.694392 37716 performance_test.cpp:186] sent 10000 HTTP POST requests in 19.8809 seconds
-I20250129 12:30:21.694427 37716 performance_test.cpp:189] content size     : 2000 bytes
-I20250129 12:30:21.694430 37716 performance_test.cpp:190] num connections  : 16 connections
-I20250129 12:30:21.694453 37716 performance_test.cpp:192] avg request Time : 1.98809 ms
-I20250129 12:30:21.694461 37716 performance_test.cpp:193] request rate     : 502.994 requests/second
-I20250129 12:30:21.694465 37716 performance_test.cpp:194] bit rate         : 0.767508 Mbps
+I20250130 19:49:24.113564 71890 performance_test.cpp:172] Connecting to: http://192.168.1.107:8080/
+I20250130 19:49:34.003443 71890 performance_test.cpp:186] Connected 500 HttpClient's in 9.87364 seconds
+I20250130 19:49:34.266191 71890 performance_test.cpp:201]
+I20250130 19:49:34.266217 71890 performance_test.cpp:202] sent 1000 HTTP POST requests
+I20250130 19:49:34.266224 71890 performance_test.cpp:203] total time       : 0.262065 seconds
+I20250130 19:49:34.266250 71890 performance_test.cpp:205] content size     : 100 bytes
+I20250130 19:49:34.266273 71890 performance_test.cpp:206] num connections  : 500 connections
+I20250130 19:49:34.266281 71890 performance_test.cpp:208] avg request Time : 0.262065 ms
+I20250130 19:49:34.266286 71890 performance_test.cpp:209] request rate     : 3815.84 requests/second
+I20250130 19:49:34.266290 71890 performance_test.cpp:210] bit rate         : 0.291126 Mbps
 ```
 
 ==== parameters
@@ -57,6 +60,7 @@ target_port - Host port
 num_connections - number of HttpClients to use for load testing
 number_of_requests - number of requests
 payload_size - number of bytes to send in the body of each request
+connect_timeout - number of milliseconds to wait for an HttpClient to connect
 ```
 
 === results
@@ -73,8 +77,10 @@ ensure that the number of socket connections is above your testing values on BOT
 ulimit -n <max-connections>
 ```
 
+example:
+
 ```
-ulimit -n 4096
+ulimit -n 100000
 ```
 
 
