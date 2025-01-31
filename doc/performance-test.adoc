@@ -28,7 +28,7 @@ Starting with INFO logging off and a response delay of 100 milliseconds:
 hello/hello --minloglevel=1 --echo_request_lag=100
 ```
 
-parameters:
+==== `hello` parameters:
 
 ```
 minloglevel: set lowest allowable log level (INFO=0, WARN=1, ERROR=2)
@@ -53,7 +53,7 @@ test/performance --target_host=192.168.1.107 --target_port=8080 \
   --connect_timeout=5000
 ```
 
-output example:
+==== output example
 
 ```
 I20250130 19:49:24.113564 71890 performance_test.cpp:172] Connecting to: http://192.168.1.107:8080/
@@ -68,7 +68,7 @@ I20250130 19:49:34.266286 71890 performance_test.cpp:209] request rate     : 381
 I20250130 19:49:34.266290 71890 performance_test.cpp:210] bit rate         : 0.291126 Mbps
 ```
 
-==== parameters
+==== `performance` parameters
 
 ```
 target_host - Host or IP address
@@ -94,6 +94,13 @@ cp ../script/ramp.py .
 
 ==== edit script
 
+Set the script variables as needed then override one of the variables in the ramp loop.
+
+[options="header"]
+|===
+|script variables   |ramp loop
+//-------------
+a|
 ```python
 if __name__ == '__main__':
     host = "192.168.1.107"
@@ -103,11 +110,14 @@ if __name__ == '__main__':
     num_connections = 16
 ```
 
-Then edit this line to ramp the variable you are interest in:
-
+a|
 ```python
-    for num_connections in [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]:
+    for num_connections in [1, 2, 4, ...]:
 ```
+|===
+
+
+
 
 ==== run script
 
@@ -179,7 +189,7 @@ image::request-rate-vs-connection-count.png[]
 
 ==== number of requests
 
-There can be a startup cost that impacts performance numbers which is the  case for this application.  Sending a 1 request can be a comparable amount of time as sending 100 or even 1000 requests.  This cost can be minimized by a have a sufficient number of requests.  For example, if there is a 5 second cost then with 1 request this add five seconds to the average request time but with 1000 requests it add 1 millisecond to the average.
+There can be startup costs that impacts performance numbers which is the  case for this application.  Sending 1 request can be a comparable amount of time as sending 100 or even 1000 requests.  This cost can be minimized by a have a sufficient number of requests.  For example, a 5 second cost with 1 request adds five seconds to the average request time but with 1000 requests it adds 1 millisecond to the average.
 
 This could be further mitigated by changing the code to send some initial requests that are not part of the metrics.
 
@@ -193,4 +203,4 @@ It's important to test with a payload that is representative of actual payloads.
 
 An overloaded server can do unexpected things.  Like short circuit its normal processing and send back a warning message.  I forget which tool was used but I was involved in testing where this exact thing happened and we had very misleading request rate numbers.
 
-The `--validate_content` flag ensures that the server is echoing back the payload correctly.
+The `--validate_content` flag ensures that the server is echoing back the payload correctly and aborts if there is a mismatch.
