@@ -30,7 +30,6 @@ std::atomic<int> requestCount(0);
 
 
 int main(int argc, char* argv[]) {
-
     FLAGS_logtostderr = true;
     FLAGS_minloglevel = 0;
 
@@ -192,7 +191,6 @@ folly::Future< std::vector<HttpClient*> > getClients(folly::EventBase* eventBase
 
 
 void print_results(double total_time_ms) {
-
     double seconds = total_time_ms / 1000.0;
     double averageRequestTime = total_time_ms / FLAGS_number_of_requests;
     double requestRate = FLAGS_number_of_requests / seconds;

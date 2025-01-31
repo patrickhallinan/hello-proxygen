@@ -48,11 +48,20 @@ def get_value(line):
 
 
 def parse_output(output):
+    print(output)
+
     lines = output.split("\n")
 
-    total_time = float(get_value(lines[4]))
-    avg_request_time = float(get_value(lines[7]))
-    request_rate = float(get_value(lines[8]))
+
+    for i, line in enumerate(lines):
+        if "total time" in line:
+            break
+
+    lines = lines[i:]
+
+    total_time = float(get_value(lines[0]))
+    avg_request_time = float(get_value(lines[3]))
+    request_rate = float(get_value(lines[4]))
 
     print(f"total_time={total_time}, avg_request_time={avg_request_time}, request_rate={request_rate}")
     return (total_time, avg_request_time, request_rate)
@@ -61,17 +70,17 @@ def parse_output(output):
 if __name__ == '__main__':
     host = "192.168.1.107"
     port = 8080
-    number_of_requests = 10000
-    payload_size = 2000
+    number_of_requests = 1000
+    payload_size = 1000
     num_connections = 16
 
-    payloads = [1, 10, 100, 1000, 10000, 100000]
+    #payloads = [1, 10, 100, 1000, 10000, 100000]
 
     class Result:
         pass
 
     results = []
-    for payload_size in payloads:
+    for num_connections in [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]:
         requests_per_second_list = []
         for i in range(5):
             output = run_performance_command(host, port, number_of_requests, payload_size, num_connections)
@@ -83,18 +92,17 @@ if __name__ == '__main__':
 
 
         result = Result()
-        result.payload_size = payload_size
+        result.num_connections = num_connections
         result.min = min(requests_per_second_list)
         result.mean = sum(requests_per_second_list) / len(requests_per_second_list)
         result.max = max(requests_per_second_list)
 
-        print(f"{result.min},{result.mean},{result.max}")
-
         results.append(result)
 
         print()
-        print("payload,min,mean,max")
+        print("num_connections,min,mean,max")
         for result in results:
-            print(f"{result.payload_size},{result.min},{result.mean},{result.max}")
+
+            print(f"{result.num_connections},{result.min},{result.mean},{result.max}")
         print()
 
