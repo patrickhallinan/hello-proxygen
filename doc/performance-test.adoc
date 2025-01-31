@@ -70,6 +70,8 @@ I20250130 19:49:34.266290 71890 performance_test.cpp:210] bit rate         : 0.2
 
 ==== `performance` parameters
 
+NOTE: If this was a *real* performance testing app, there should be an option to set the number of threads.  This uses only one thread.
+
 ```
 target_host - Host or IP address
 target_port - Host port
