@@ -118,37 +118,74 @@ std::string makePayload(int size) {
 }
 
 
+// Originally client->connect() was called on all the clients and folly::collectAll()
+// was used to wait for them all to connect but occassionally client->connect() fails
+// with a timeout exception.  This is work;s around the issue by connecting clients
+// one by one and doing retries when an exception occurs.
+//
+// This could do things in batches and have a batch size
+// And/Or it could detect which clients failed to connect and recursively try again and
+// put the successful connection in a out parameter
+//
+// FIXME: Make connect() thread safe.
+folly::Future<folly::Unit> connect(folly::EventBase* eventBase,
+                                   std::vector<HttpClient*> clients,
+                                   int index=0) {
+
+    static int retries;
+    constexpr int max_retries = 200;
+
+    if (index == 0)
+        retries = 0;
+
+    if (index >= clients.size())
+        return folly::unit;
+
+    HttpClient* client = clients[index];
+
+    return client->connect()
+        .thenValue([eventBase, clients, index](folly::Unit) mutable {
+            return connect(eventBase, std::move(clients), index+1);
+        })
+        .thenError(folly::tag_t<std::exception>{},
+            [eventBase, clients=std::move(clients), index](const std::exception& e) mutable {
+
+            if (retries++ >= max_retries) {
+                LOG(ERROR) << "Connect failed.  Exceeded max connect() retries: " << max_retries
+                    << ", exception: " << e.what();
+                exit(1);
+            }
+
+            LOG(ERROR) << "Connect failed.  Retrying.  exception: " << e.what();
+
+            return connect(eventBase, std::move(clients), index);
+        });
+}
+
+
 folly::Future< std::vector<HttpClient*> > getClients(folly::EventBase* eventBase, int count) {
     using namespace std::chrono_literals;
 
     std::vector<HttpClient*> clients;
-    std::vector<folly::Future<folly::Unit>> connectFutures;
-
 
     auto url = fmt::format("http://{}:{}/", FLAGS_target_host, FLAGS_target_port);
 
     LOG(INFO) << "Connecting to: " << url;
 
-    for (int i = 0 ; i < count ; i++) {
-
+    for (int i = 0 ; i < count ; i++)
         clients.push_back(new HttpClient(eventBase, 5s, httpHeaders(), url));
 
-        connectFutures.push_back(clients[i]->connect());
-    }
+    auto start = std::chrono::high_resolution_clock::now();
 
-    return folly::collectAll(std::move(connectFutures))
-        .via(eventBase)
-        .thenValue([eventBase, clients=std::move(clients)]
-                   (std::vector<folly::Try<folly::Unit>> results) mutable {
+    // TODO: Change connect() to return Future<vector<HttpClient*> and stop capturing clients
+    return connect(eventBase, clients)
+        .thenValue([eventBase, clients, start] (folly::Unit) mutable {
+            auto end = std::chrono::high_resolution_clock::now();
 
-            for (const auto& result : results) {
-                if (! result.hasValue()) {
-                    LOG(ERROR) << "Exception: " << result.exception().what();
-                    exit(1);
-                }
-            }
+            std::chrono::duration<double> elapsed = end - start;
 
-            LOG(INFO) << "All HttpClient's connected";
+            LOG(INFO) << "Connected " << clients.size() << " HttpClient's in "
+                << elapsed.count() << " seconds";
 
             return std::move(clients);
         });

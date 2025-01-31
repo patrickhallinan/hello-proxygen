@@ -75,5 +75,9 @@ private:
 
     std::unique_ptr<folly::Promise<folly::Unit>> connectPromise_;
     std::unique_ptr<folly::Promise<HttpResponse>> requestPromise_;
+
+    // for metrics
+    std::chrono::time_point<std::chrono::high_resolution_clock> connectStartTime_;
+
 };
 

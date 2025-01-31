@@ -12,7 +12,9 @@ using namespace folly;
 using namespace proxygen;
 using namespace std;
 
-DECLARE_int32(recv_window);
+
+DEFINE_bool(log_connect_time, false, "Log number of milliseconds to connect to endpoint");
+DEFINE_int32(connect_timeout, 500, "HttpClient connect Timout in milliseconds");
 
 
 HttpClient::HttpClient(EventBase* eb,
@@ -31,16 +33,24 @@ HttpClient::HttpClient(EventBase* eb,
 
 
 folly::Future<folly::Unit> HttpClient::connect() {
+    connectStartTime_ = std::chrono::high_resolution_clock::now();
 
     folly::SocketAddress socketAddress{url_.getHost(), url_.getPort(), /*allowNameLookup*/true};
 
     static const folly::SocketOptionMap socketOptions{{{SOL_SOCKET, SO_REUSEADDR}, 1}};
 
+    // Must initialize connectPromise because connect() can fail and call
+    // HttpClient::connectError() before http_Connector_->connect() finishes.
+    // For example, if creating a socket fails because ulimit is too low.
+    connectPromise_.reset(new folly::Promise<folly::Unit>{});
+
     // reset() ensures HTTPConnector is ready for subsequent connections.
     httpConnector_->reset();
-    httpConnector_->connect(eb_, socketAddress, std::chrono::milliseconds(500), socketOptions);
+    httpConnector_->connect(eb_,
+                            socketAddress,
+                            std::chrono::milliseconds(FLAGS_connect_timeout),
+                            socketOptions);
 
-    connectPromise_.reset(new folly::Promise<folly::Unit>{});
     return connectPromise_->getFuture();
 }
 
@@ -104,6 +114,13 @@ proxygen::HTTPMessage HttpClient::createHttpMessage(proxygen::HTTPMethod method,
 // CONNECT EVENT HANDLERS
 
 void HttpClient::connectSuccess(HTTPUpstreamSession* session) {
+
+    if (FLAGS_log_connect_time) {
+        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double, std::milli> connectTime = end - connectStartTime_;
+        LOG(INFO) << "HttpClient connect time (milliseconds): " << connectTime.count();
+    }
+
     if (url_.isSecure()) {
         // TODO: sslHandshakeFollowup(session);
     }

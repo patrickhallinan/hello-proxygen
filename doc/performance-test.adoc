@@ -63,6 +63,21 @@ payload_size - number of bytes to send in the body of each request
 
 
 
+==== payload
+
+==== number of connections
+
+ensure that the number of socket connections is above your testing values on BOTH the client and server machines.
+
+```
+ulimit -n <max-connections>
+```
+
+```
+ulimit -n 4096
+```
+
+
 === factors affecting performance
 
 How you can be misled by performance testing:
