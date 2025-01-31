@@ -56,7 +56,6 @@ folly::Future<HttpClient*> send(HttpClient* client, std::string& payload) {
             if (response.status() != 200)
                 LOG(FATAL) << "received invalid status code from host" << response.status();
 
-            // I don't think there would be any value added to log the random payload
             if (FLAGS_validate_content && response.content() != payload)
                 LOG(FATAL) << "invalid response from host. expected size=" << payload.size()
                            << ", actual size=" << response.content().size()
@@ -192,48 +191,55 @@ folly::Future< std::vector<HttpClient*> > getClients(folly::EventBase* eventBase
 }
 
 
+void print_results(double total_time_ms) {
+
+    double seconds = total_time_ms / 1000.0;
+    double averageRequestTime = total_time_ms / FLAGS_number_of_requests;
+    double requestRate = FLAGS_number_of_requests / seconds;
+    double mbps = requestRate * 8 * FLAGS_payload_size / (1024*10240);
+
+    LOG(INFO) << "";
+    LOG(INFO) << "sent " << FLAGS_number_of_requests << " HTTP POST requests";
+    LOG(INFO) << "total time       : " << seconds << " seconds";
+
+    LOG(INFO) << "content size     : " << FLAGS_payload_size << " bytes";
+    LOG(INFO) << "num connections  : " << FLAGS_num_connections << " connections";
+
+    LOG(INFO) << "avg request Time : " << averageRequestTime << " ms";
+    LOG(INFO) << "request rate     : " << requestRate << " requests/second";
+    LOG(INFO) << "bit rate         : " << mbps << " Mbps";
+}
+
+
 void performance_test(folly::EventBase* eventBase) {
 
-    static std::vector<HttpClient*> clients;
-    static std::string payload;
     static std::chrono::time_point<std::chrono::high_resolution_clock> start;
 
     getClients(eventBase, FLAGS_num_connections)
         .thenValue([eventBase](std::vector<HttpClient*> httpClients) {
 
-            clients = httpClients;
-            payload = makePayload(FLAGS_payload_size);
+            auto payload = makePayload(FLAGS_payload_size);
 
             start = std::chrono::high_resolution_clock::now();
 
-            return sendRequests(eventBase, clients, payload);
+            // XXX: maybe have sendRequests() return Future<vector<HttpClient*>>
+            return sendRequests(eventBase, httpClients, payload)
+                .thenValue([httpClients](folly::Unit) {
+                    return httpClients;
+                });
         })
-        .thenValue([](folly::Unit) {
+        .thenValue([](std::vector<HttpClient*> clients) {
 
             auto end = std::chrono::high_resolution_clock::now();
 
             std::chrono::duration<double, std::milli> duration = end - start;
 
-            double seconds = duration.count() / 1000.0;
-            double averageRequestTime = duration.count() / FLAGS_number_of_requests;
-            double requestRate = FLAGS_number_of_requests / seconds;
-            double mbps = requestRate * 8 * FLAGS_payload_size / (1024*10240);
-
-            LOG(INFO) << "";
-            LOG(INFO) << "sent " << FLAGS_number_of_requests << " HTTP POST requests";
-            LOG(INFO) << "total time       : " << seconds << " seconds";
-
-            LOG(INFO) << "content size     : " << FLAGS_payload_size << " bytes";
-            LOG(INFO) << "num connections  : " << clients.size() << " connections";
-
-            LOG(INFO) << "avg request Time : " << averageRequestTime << " ms";
-            LOG(INFO) << "request rate     : " << requestRate << " requests/second";
-            LOG(INFO) << "bit rate         : " << mbps << " Mbps";
+            print_results(duration.count());
 
             for (auto& client : clients)
                 delete client;
 
-            // HACK: Figure out how to exit immediately after this ends and remove exit() call
+            // HACK: Figure out how to exit immediately after this ends and remove exit()
             exit(0);
         });
 }
