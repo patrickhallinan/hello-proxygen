@@ -80,7 +80,7 @@ std::string makePayload(int size) {
 folly::Future<HttpClient*> send(HttpClient* client, std::string& payload) {
 
     return client->POST(payload)
-        .thenValue([client, &payload](const HttpResponse& response) -> folly::Future<HttpClient*> {
+        .thenValue([client, &payload](const HttpResponse& response) {
 
             if (response.status() != 200)
                 LOG(FATAL) << "received invalid status code from host" << response.status();
@@ -122,18 +122,17 @@ folly::Future<folly::Unit> sendRequests(folly::EventBase* eventBase,
 
 // Originally client->connect() was called on all the clients and folly::collectAll()
 // was used to wait for them all to connect but occassionally client->connect() fails
-// with a timeout exception.  This is work;s around the issue by connecting clients
-// one by one and doing retries when an exception occurs.
+// with a timeout exception.  This work's around the issue by connecting clients one
+// by one and doing retries when an exception occurs.
 //
-// This could do things in batches and have a batch size
-// And/Or it could detect which clients failed to connect and recursively try again and
-// put the successful connection in a out parameter
+// This could be done in batches using folly::collectAll where connection failures
+// would got into the next batch.
 //
-// FIXME: Make connect() thread safe.
 folly::Future<folly::Unit> connect(folly::EventBase* eventBase,
                                    std::vector<HttpClient*> clients,
                                    int index=0) {
 
+    // FIXME: Make connect() thread safe.
     static int retries;
     constexpr int max_retries = 200;
 
