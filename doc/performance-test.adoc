@@ -84,6 +84,8 @@ validate_content - verify response content equals request content
 
 === ramp script
 
+`ramp.py` was written to simplify performance testing over different number of connections, payload sizes, and number of requests.  It ramps one variable, run the performance test multiple times, and reports averages.
+
 This is alpha quality.  The script's values needs to be modified for any given use case.
 
 ==== copy script to build directory
@@ -119,8 +121,6 @@ a|
 |===
 
 
-
-
 ==== run script
 
 ```bash
@@ -153,11 +153,32 @@ image::request-rate-vs-payload.png[]
 
 ==== request rate vs number of connections
 
-Ensure that the number of socket connections available on your systems is above your testing values on BOTH the client and server machines.  In linux this can be set by:
+Ensure that the number of socket connections available on your systems is above your testing values on BOTH the client and server machines.
+
+===== ubuntu
+
+Set limit temporarily in terminal by:
 
 ```bash
 ulimit -n <max-connections>
 ```
+
+===== rocky linux
+
+Add these lines:
+
+```bash
+* soft nofile 100000
+* hard nofile 100000
+```
+
+To:
+
+```bash
+/etc/security/limits.conf
+```
+
+Then restart.  It might be fine to launch a new terminal but that wasn't tested.
 
 
 [options="header"]
@@ -179,7 +200,6 @@ num_connections   min   mean   max
        128        146    153   158
        256        157    162   175
        512        163    172   180
-      1024        123    134   145
 ----
 
 a|
