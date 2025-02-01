@@ -84,7 +84,7 @@ validate_content - verify response content equals request content
 
 === ramp script
 
-`ramp.py` was written to simplify performance testing over different number of connections, payload sizes, and number of requests.  It ramps one variable, run the performance test multiple times, and reports averages.
+`ramp.py` was written to simplify performance testing over different numbers of connections, payload sizes, and number of requests.  It ramps one variable, run the performance test multiple times, and reports averages.
 
 This is alpha quality.  The script's values needs to be modified for any given use case.
 
