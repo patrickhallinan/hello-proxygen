@@ -55,7 +55,7 @@ void EchoHandler::onEOM() noexcept {
         // ensure that Timekeeper is initialized
         static auto tk = folly::detail::getTimekeeperSingleton();
 
-        static auto ms = chrono::milliseconds(FLAGS_echo_request_lag);
+        static auto ms = std::chrono::milliseconds(FLAGS_echo_request_lag);
         static std::atomic<int> count = 0;
 
         auto p = make_shared<Promise<Unit>>();
