@@ -23,8 +23,10 @@ git clone --recurse-submodules  git@github.com:patrickhallinan/hello-proxygen
 
 ### mac
 
+install `brew` then
+
 ```bash
-brew install pkg-config
+brew install cmake fast_float pkg-config
 ```
 
 ### rocky linux 9 (red hat clone)
@@ -50,24 +52,17 @@ sudo apt install clang
 cd proxygen/proxygen && ./build.sh
 ```
 
-### ubuntu
+Running `build.sh` eats a lot of memory.  On ubuntu 24.04 the build failed the first time with 16 GB of memory and the build script had to be run multiple times.  It succeeded building the first time on ubuntu 24.04 with 20 GB.
 
-With 16GB of RAM got this error and had to run `./build.sh` again.
-
-```bash
-c++: fatal error: Killed signal terminated program cc1plus
-compilation terminated.
-```
-
-With 20GB proxygen fully built first time.
-
-### debian on chromebook
-
-Set number of jobs option to 1
+If memory is low and cannot be increased the number of jobs can be reduced like this:
 
 ```bash
 ./build.sh -j <number-of-jobs>
 ```
+
+It built fine on a chromebook having 8 GB of memory with the number of jobs set to 1.
+
+
 
 ## build hello-proxygen
 
