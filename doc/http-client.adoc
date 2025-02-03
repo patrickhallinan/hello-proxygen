@@ -89,7 +89,9 @@ main -> HttpClient : ctor{ EventBase, defaultTimeout, url, headers }
 
 HttpClient -> WheelTimerInstance : timer=ctor{ defaultTimeout, EventBase }
 note right #ff8888
-    must create before starting event loop or in the event loop thread
+    Wraps the EventBase's HHWheelTimer
+
+    Must create before starting event loop or in the event loop's thread
    
     Event handlers with timeout callbacks are registered with the timer.
     If an event occurs before a timeout then the timeout callback is removed.
