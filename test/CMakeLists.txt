@@ -20,8 +20,11 @@ set(TARGET_LIBRARIES
     proxygenhttpserver
     proxygen
     wangle
-    fizz
+
+    mvfst_exception
+
     folly
+    fizz
 
     ${SODIUM_LDFLAGS}
 
