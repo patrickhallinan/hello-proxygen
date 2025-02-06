@@ -1,5 +1,23 @@
 = notes
 
+
+== proxygen v2025.02.03.00
+
+Moving to v2025.02.03.00 caused a link error.  Quic was moved out of proxygen to https://github.com/facebook/mvfst
+
+Not sure when that happened but library `mvfst_exception` had to be added to the target link libraries.
+
+Looking though the build files two other libraries look like they might needed to use quic:
+
+----
+mvfst_client
+mvfst_server
+mvfst_transport
+----
+
+Seems crazy but a lot of these libraries contain only one `.o` file.  
+
+
 == building on wsl - ubuntu 24.04
 
 NOTE: when clang was installed its libstdc++ dependency was missing.  This was strange because gcc was working fine.

@@ -40,7 +40,7 @@ script/rocky-linux-9-deps.sh
 ### ubuntu 24.04 and debian 12
 
 ```bash
-sudo apt install clang
+sudo apt install clang libfast-float-dev
 ```
 
 
@@ -52,7 +52,7 @@ sudo apt install clang
 cd proxygen/proxygen && ./build.sh
 ```
 
-Running `build.sh` eats a lot of memory.  On ubuntu 24.04 the build failed the first time with 16 GB of memory and the build script had to be run multiple times.  It succeeded building the first time on ubuntu 24.04 with 20 GB.
+Running `build.sh` uses a lot of memory.  On ubuntu 24.04 the build failed the first time with 16 GB of memory and the build script had to be run multiple times.  It succeeded building the first time on ubuntu 24.04 with 20 GB.
 
 If memory is low and cannot be increased the number of jobs can be reduced like this:
 
