@@ -77,21 +77,32 @@ make
 ```
 
 
-## run server
+## run and test
+
+With the exception of `curl` everything is run from the `build` directory.
+
+### run server
 
 ```bash
 hello/hello
 ```
 
 
-## run test
+### run feature test
 
 ```bash
 test/test
 ```
 
 
-## test with curl
+### run performance test
+
+```bash
+test/performance
+```
+
+
+### test with curl
 
 ```bash
 curl http://localhost:8080
