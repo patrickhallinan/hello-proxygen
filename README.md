@@ -40,7 +40,7 @@ script/rocky-linux-9-deps.sh
 ### ubuntu 24.04 and debian 12
 
 ```bash
-sudo apt install clang
+sudo apt install clang libfast-float-dev
 ```
 
 
