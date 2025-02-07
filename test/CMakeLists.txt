@@ -1,7 +1,5 @@
 
 add_executable(test
-    HttpClient.cpp
-    TransactionHandler.cpp
     Test.cpp
 
     feature_test.cpp
@@ -9,15 +7,13 @@ add_executable(test
 
 
 add_executable(performance
-    HttpClient.cpp
-    TransactionHandler.cpp
-
     performance_test.cpp
 )
 
 
 set(TARGET_LIBRARIES
-    proxygenhttpserver
+    httpclient
+
     proxygen
     wangle
 
