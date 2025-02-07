@@ -291,8 +291,11 @@ HTTPConnector o-- AsyncSocket
 HTTPUpstreamSession o-- HTTPTransaction
 HTTPTransaction o-- HTTPTransactionHandler
 
-TransactionHandler o-- HttpClient
-
+HttpClient ..> TransactionHandler : creates 
+note right #ff8888
+    contains request Promise and
+    handles response from server 
+end note
 
 class EventBase {
     loop()
