@@ -9,6 +9,8 @@ add_executable(hello
 
 set(TARGET_LIBRARIES
     proxygenhttpserver
+	httpclient
+
     proxygen
     wangle
 

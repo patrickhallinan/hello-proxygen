@@ -71,5 +71,6 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/proxygen/proxygen/_build/deps/lib64/")
 endif()
 
 
+add_subdirectory(lib)
 add_subdirectory(hello)
 add_subdirectory(test)
