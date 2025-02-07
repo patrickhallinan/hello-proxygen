@@ -57,27 +57,25 @@ folly::Future<folly::Unit> HttpClient::connect() {
 
 
 folly::Future<HttpResponse> HttpClient::GET() {
-    auto transactionHandler = new TransactionHandler{this};
+    auto transactionHandler = new TransactionHandler{};
     auto txn = session_->newTransaction(transactionHandler);
 
     txn->sendHeaders(createHttpMessage(proxygen::HTTPMethod::GET));
     txn->sendEOM();
 
-    requestPromise_.reset(new folly::Promise<HttpResponse>{});
-    return requestPromise_->getFuture();
+    return transactionHandler->getFuture();
 }
 
 
 folly::Future<HttpResponse> HttpClient::POST(const std::string& content) {
-    auto transactionHandler = new TransactionHandler{this};
+    auto transactionHandler = new TransactionHandler{};
     auto txn = session_->newTransaction(transactionHandler);
 
     txn->sendHeaders(createHttpMessage(proxygen::HTTPMethod::POST, content.size()));
     txn->sendBody(folly::IOBuf::copyBuffer(content));
     txn->sendEOM();
 
-    requestPromise_.reset(new folly::Promise<HttpResponse>{});
-    return requestPromise_->getFuture();
+    return transactionHandler->getFuture();
 }
 
 
@@ -139,17 +137,5 @@ void HttpClient::connectSuccess(HTTPUpstreamSession* session) {
 void HttpClient::connectError(const folly::AsyncSocketException& e) {
     LOG(ERROR) << "Failed to connect to " << url_.getHostAndPort();
     connectPromise_->setException(e);
-}
-
-
-// REQUEST EVENT HANDLERS
-
-void HttpClient::requestComplete(HttpResponse httpResponse) noexcept {
-    requestPromise_->setValue(std::move(httpResponse));
-}
-
-
-void HttpClient::requestError(const proxygen::HTTPException& error) noexcept {
-    requestPromise_->setException(error);
 }
 

@@ -179,31 +179,33 @@ ifeval::["{docdir}" != ""]
 
 participant "**HttpClient**" as HttpClient #LightGreen
 participant "**AsyncSocket**" as AsyncSocket
-participant "**Promise**" as Promise
 participant "**TransactionHandler**" as TransactionHandler #LightGreen
+participant "**Promise**" as Promise
 participant "**HTTPConnector**" as HTTPConnector
 participant "**HTTPUpstreamSession**" as HTTPUpstreamSession
 participant "**HTTPTransaction**" as HTTPTransaction
 
 
+== POST ==
+
 -> HttpClient : POST( "content" )
-HttpClient -> HTTPUpstreamSession : txn=newTransaction( this )
+
+HttpClient -> TransactionHandler : transactionHandler=ctor{ this }
+HttpClient -> HTTPUpstreamSession : txn=newTransaction( transactionHandler )
 HTTPUpstreamSession -> HTTPUpstreamSession : newTransactionWithError( txnHandler )
 HTTPUpstreamSession -> HTTPUpstreamSession : startNow()
 HTTPUpstreamSession -> HTTPUpstreamSession : HTTPSession::startNow()    
 HTTPUpstreamSession -> HTTPUpstreamSession : HTTPSession::createTransaction()
 HTTPUpstreamSession --> HttpClient : HTTPTransaction
 
-HttpClient <- HttpClient : sendRequest( txn )
+HttpClient -> HttpClient : request=createHttpMessage()
+HttpClient -> HTTPTransaction : sendHeaders( /*proxygen::HTTPMessage*/ request )
+HttpClient -> HTTPTransaction : sendBody( content )
+HttpClient -> HTTPTransaction : sendEOM() // end of message
 
-group send request
-    HttpClient -> HttpClient : request=createHttpMessage()
-    HttpClient -> HTTPTransaction : sendHeaders( /*proxygen::HTTPMessage*/ request )
-    HttpClient -> HTTPTransaction : sendBody( content )
-    HttpClient -> HTTPTransaction : sendEOM() // end of message
-end group
-
-HttpClient -> Promise : getFuture()
+HttpClient -> TransactionHandler : getFuture()
+TransactionHandler -> Promise : getFuture()
+TransactionHandler --> HttpClient : Future<HttpResponse>
 <-- HttpClient : Future<HttpResponse>
 
 
@@ -218,14 +220,15 @@ note left
 end note
 
 HTTPTransaction -> TransactionHandler : onEOM()
-TransactionHandler -> HttpClient : requestComplete( httpResponse )
-HttpClient -> Promise : setValue( httpResponse )
 
 note across
-    **NOTE:** HttpClient::onError() can be called between HttpClient::onEOM() and HttpClient::detachTransaction()
+    **NOTE:** HttpClient::onError() can be called between HttpClient::onEOM() and HttpClient::detachTransaction(), so EOM isn't necessarilly end of message
 end note
 
 HTTPTransaction -> TransactionHandler : detachTransaction()
+
+TransactionHandler -> Promise : setValue( httpResponse )
+
 ----
 
 endif::[]

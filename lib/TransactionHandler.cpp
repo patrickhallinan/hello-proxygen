@@ -3,13 +3,32 @@
 #include "HttpClient.h"
 
 
+folly::Future<HttpResponse> TransactionHandler::getFuture() {
+    if (requestPromise_) {
+        throw std::runtime_error("Cannot call TransactionHandler::getFuture() twice");
+    }
+
+    requestPromise_ = std::make_unique<folly::Promise<HttpResponse>>();
+    return requestPromise_->getFuture();
+}
+
+
 void TransactionHandler::setTransaction(proxygen::HTTPTransaction* txn) noexcept {
-    txn_ = txn;
+    // first event. txn is good until detachTransaction()
 }
 
 
 void TransactionHandler::detachTransaction() noexcept {
-    // At this point this could be reused instead of deleted.
+    // requestPromise_ will be reset if onError() is called
+    if (requestPromise_) {
+        std::string body = inputBuf_->moveToFbString().toStdString();
+        HttpResponse httpResponse{response_->getStatusCode(), std::move(body)};
+
+        requestPromise_->setValue(std::move(httpResponse));
+        requestPromise_.reset();
+    }
+
+    // this could be reused instead of deleted.
     delete this;
 }
 
@@ -20,37 +39,29 @@ void TransactionHandler::onHeadersComplete(std::unique_ptr<proxygen::HTTPMessage
 }
 
 
-void TransactionHandler::onBody(std::unique_ptr<folly::IOBuf> chain) noexcept {
-    if (!chain) {
+void TransactionHandler::onBody(std::unique_ptr<folly::IOBuf> link) noexcept {
+    if (!link) {
         return;
     }
 
     // IOBuf is a circular linked list.
     if (inputBuf_) {
-        inputBuf_->prependChain(std::move(chain));
+        inputBuf_->prependChain(std::move(link));
     } else {
-        inputBuf_ = std::move(chain);
+        inputBuf_ = std::move(link);
     }
 }
 
 
 void TransactionHandler::onEOM() noexcept {
-
-    std::string body = inputBuf_->moveToFbString().toStdString();
-    HttpResponse httpResponse{response_->getStatusCode(), std::move(body)};
-
-    // XXX: If TransactionHandler owned the Promise we could skip the middle-man
-    // and send the response directly to the HttpClient user instead of going
-    // thru the HttpClient
-
-    // FIXME: onError() can be called after onEOM(). Maybe this should be handled
-    // in detachTransaction()? Something needs to be done because we cannot call
-    // both httpClient_->requestComplete() and httpClient_->onError()
-    httpClient_->requestComplete(std::move(httpResponse));
+    // onError() can be called after onEOM().  I'm not sure why but maybe
+    // onTrailers() could be called after this.  Whatever the reason we
+    // cannot set the request promise here safely.
 }
 
 
 void TransactionHandler::onError(const proxygen::HTTPException& error) noexcept {
-    httpClient_->requestError(error);
+    requestPromise_->setException(error);
+    requestPromise_.reset();
 }
 
