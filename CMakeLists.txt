@@ -2,6 +2,12 @@ cmake_minimum_required(VERSION 3.16)
 
 project (HelloProxygen)
 
+# COPY FILES
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/kube/Dockerfile      # Source file path
+    ${CMAKE_CURRENT_BINARY_DIR}/Dockerfile COPYONLY  # Destination path
+)
+
 # for rtags
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -22,6 +28,7 @@ if(POLICY CMP0167)
     cmake_policy(SET CMP0167 NEW)
 endif()
 
+set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
 
 find_library(SNAPPY_LIB snappy)
 
