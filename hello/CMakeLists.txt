@@ -9,10 +9,15 @@ add_executable(hello
 
 set(TARGET_LIBRARIES
     proxygenhttpserver
+    httpclient
+
     proxygen
     wangle
-    fizz
+
+    mvfst_exception
+
     folly
+    fizz
 
     ${SODIUM_LDFLAGS}
 

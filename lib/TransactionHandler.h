@@ -3,19 +3,37 @@
 #include <proxygen/lib/http/session/HTTPTransaction.h>
 
 
+class HttpResponse {
+    uint16_t status_;
+    std::string content_;
+public:
+    HttpResponse(uint16_t status, std::string content)
+        : status_{status}
+        , content_(std::move(content))
+    {}
+
+    uint16_t status() const {
+        return status_;
+    }
+
+    std::string content() const {
+        return content_;
+    }
+};
+
+
 class TransactionHandler : public proxygen::HTTPTransactionHandler {
-
-    class HttpClient* httpClient_;
-
-    // This is assigned in the beginning of a transaction with setTransaction()
-    // event and it is good until detachTransaction()
-    proxygen::HTTPTransaction* txn_{nullptr};
-
     std::unique_ptr<proxygen::HTTPMessage> response_;
     std::unique_ptr<folly::IOBuf> inputBuf_;
-public:
-    explicit TransactionHandler(HttpClient* httpClient) : httpClient_{httpClient} {}
+    std::unique_ptr<folly::Promise<HttpResponse>> requestPromise_;
 
+public:
+    TransactionHandler()
+    {}
+
+    folly::Future<HttpResponse> getFuture();
+
+protected:
     void setTransaction(proxygen::HTTPTransaction*) noexcept override;
     void detachTransaction() noexcept override;
 
@@ -31,4 +49,3 @@ public:
     void onEgressResumed() noexcept override {}
     void onEgressPaused() noexcept override {}
 };
-
