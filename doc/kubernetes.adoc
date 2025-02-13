@@ -1,52 +1,64 @@
 = kubernetes
 
-Plan:  This containerizes the server, the feature test, and the performance test.  Then deploys and runs them.  
-
-This uses `Kind` (Kubernetes in Docker)
+This assumes that `hello` is built.  All commands are run from the `build/` directory
 
 
-MicroK8s
+== install
 
-
-== macOS:
-
-* Description: Kind is designed for running local Kubernetes clusters using Docker container "nodes". It's perfect for testing and development because it can simulate multi-node clusters on a single machine.
-
-* Setup for 3 Nodes: 
-** Install Docker for macOS first.
-Install kind using brew install kind or by downloading the binary from the official site.
-** Use a configuration file to define your cluster with 3 nodes:
-
-```yaml
-kind: Cluster
-apiVersion: kind.x-k8s.io/v1alpha4
-nodes:
-- role: control-plane
-- role: worker
-- role: worker
+```bash
+sudo apt install -y apt-transport-https ca-certificates curl software-properties-common gnupg-agent
 ```
 
-** Create the cluster with kind create cluster --config=your-config-file.yaml.
+```
+sudo apt  install docker.io
+```
+
+=== to run docker without sudo
+
+```
+sudo usermod -aG docker <user>
+```
+
+== create docker image
+
+```
+docker build . --no-cache -t hello-base -f Dockerfile
+```
 
 
-== Ubuntu:
+== run image
 
-* Description: As mentioned, Kind can be used on Ubuntu as well for local development.
-* Setup for 3 Nodes: 
-    ** Install Docker (sudo apt-get install docker.io) and kind (GO111MODULE="on" go get sigs.k8s.io/kind@v0.17.0 or download the binary).
-    ** Use the same configuration file approach as for macOS to define a 3-node cluster.
-
-
-==  Rocky Linux:
-
-* Description: Similar to Ubuntu, Kind can be used for local Kubernetes testing.
-* Setup for 3 Nodes: 
-    ** Install Docker (sudo yum install docker-ce) and kind (download the binary or use go get).
-    ** Use the configuration file method to create a 3-node cluster.
+```
+docker run -ti -p 3000:22 <image-id or tag>
+```
 
 
-== Note:
- 
-* For all systems, ensure you have sufficient system resources (CPU, RAM, disk space) to run multiple nodes on a single machine.
-* Network configurations might need tweaking depending on how you set up your nodes (e.g., using bridge networking for VMs or containers).
-*These solutions simulate multi-node clusters but are not as performant or reflective of real multi-machine setups due to running on a single host.
+
+```
+docker run -ti -p 3000:22 hello
+```
+
+```
+COPY ./hello/hello /app/
+WORKDIR /app
+```
+
+```
+#RUN apt-get clean
+#RUN rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Create the SSH directory and set permissions
+RUN mkdir /var/run/sshd
+RUN chmod 0755 /var/run/sshd
+
+
+#RUN mkdir /home/ubuntu/.ssh
+#RUN chmod 0700 /home/ubuntu/.ssh
+#RUN chown ubuntu:ubuntu /home/ubuntu/.ssh
+
+#RUN echo "$PRIVATEKEY" > /home/ubuntu/.ssh/id_ed25519
+#RUN echo  "$PUBLICKEY" > /home/ubuntu/.ssh/id_ed25519.pub
+
+# RUN usermod -aG sudo ubuntu
+#RUN echo "ubuntu ALL=(ALL) NOPASSWD: ALL" | tee -a /etc/sudoers.d/passwordless_sudo > /dev/null
+```
