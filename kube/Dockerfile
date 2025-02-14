@@ -19,7 +19,8 @@ RUN chmod 0440 /etc/sudoers.d/passwordless_sudo
 
 RUN git clone https://github.com/patrickhallinan/hello-proxygen /hello-proxygen
 
-RUN git clone https://github.com/facebook/proxygen.git /hello-proxygen/proxygen
+WORKDIR /hello-proxygen
+RUN git clone https://github.com/facebook/proxygen.git proxygen
 
 RUN chown -R ubuntu:ubuntu /hello-proxygen/
 
