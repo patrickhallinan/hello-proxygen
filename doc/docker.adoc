@@ -1,0 +1,78 @@
+= docker
+
+NOTE: This is a work in progress.
+
+Run `hello-proxygen` in a docker container.
+
+There are two images:
+
+* `hello-base` : Based on `ubuntu-24.04`. Checks out and builds `proxygen` and `hello-proxygen` then runs `sshd`
+* `hello` : Based on `hello-base`. Pulls latest `hello-proxygen`, builds it, then runs `sshd`
+
+
+== create docker images
+
+NOTE: Failed to build proxygen in docker on ancient hardware.
+
+=== rocky linux
+
+```
+docker buildx create --use
+```
+
+```
+sudo docker buildx build . --platform=linux/amd64 -t hello:hello-base -f  hello-base.docker
+```
+
+```
+sudo docker buildx build . --platform=linux/amd64 -t hello:hello -f  hello-base.docker
+```
+
+=== ubuntu 24.04
+
+```
+docker build . --no-cache -t hello:hello-base -f hello-base.docker
+```
+
+```
+docker build . --no-cache -t hello:hello -f hello.docker
+```
+
+Warning when building this way.  Should probably add buildx plugin do docker.
+
+```
+DEPRECATED: The legacy builder is deprecated and will be removed in a future release.
+            Install the buildx component to build images with BuildKit:
+            https://docs.docker.com/go/buildx/
+```
+
+
+
+== run image
+
+Port 3000 can be any available port.
+
+```
+sudo docker run -ti -p 3000:22 <image-id or tag>
+```
+
+```
+sudo docker run -ti -p 3000:22 hello:hello-base
+```
+
+To access the container do
+
+```
+ssh ubuntu@localhost -p 3000
+```
+
+
+== to run docker as non-root user
+
+```
+sudo usermod -aG docker $USER
+```
+
+```
+newgrp docker  # or log out and in again
+```
