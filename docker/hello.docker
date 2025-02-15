@@ -1,0 +1,17 @@
+FROM hello:hello-base
+
+USER ubuntu
+
+RUN git pull origin master
+
+# build hello-proxygen
+WORKDIR /hello-proxygen
+RUN rm -rf build
+RUN mkdir build
+WORKDIR /hello-proxygen/build
+RUN cmake ..
+RUN make
+
+USER root
+
+CMD ["/usr/sbin/sshd", "-D"]
