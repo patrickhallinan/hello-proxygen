@@ -292,9 +292,11 @@ HTTPUpstreamSession o-- HTTPTransaction
 HTTPTransaction o-- HTTPTransactionHandler
 
 HttpClient ..> TransactionHandler : creates 
-note right #ff8888
+note right #ffcccc
     contains request Promise and
-    handles response from server 
+    handles response from server
+
+    then self destructs!
 end note
 
 class EventBase {
