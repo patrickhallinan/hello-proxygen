@@ -22,6 +22,7 @@ if(POLICY CMP0167)
     cmake_policy(SET CMP0167 NEW)
 endif()
 
+set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
 
 find_library(SNAPPY_LIB snappy)
 

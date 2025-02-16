@@ -11,6 +11,7 @@ Tested on macOS Sonoma (14.7.1), ubuntu 24.04 (on Windows 11 in a VM and in WSL)
 - [http client](https://github.com/patrickhallinan/hello-proxygen/blob/master/doc/http-client.adoc)
 - [feature test](https://github.com/patrickhallinan/hello-proxygen/blob/master/doc/feature-test.adoc)
 - [performance test](https://github.com/patrickhallinan/hello-proxygen/blob/master/doc/performance-test.adoc)
+- [docker](https://github.com/patrickhallinan/hello-proxygen/blob/master/doc/docker.adoc)
 
 
 ## get repo
@@ -40,7 +41,7 @@ script/rocky-linux-9-deps.sh
 ### ubuntu 24.04 and debian 12
 
 ```bash
-sudo apt install clang libfast-float-dev
+sudo apt install clang cmake libfast-float-dev
 ```
 
 
