@@ -38,7 +38,7 @@ void Test::run() {
 
 a|
 * `Test::run()` puts a callback on the EventBase's queue. Later the event loop will dequeue and run the callback.
-* When the callback is run, `http->connect()` queues a callback the `EventBase's` queue and returns a `Future`
+* When the callback is run, `http->connect()` queues a callback to the `EventBase's` queue and returns a `Future`
 * `.thenValue()` continuations are called on each `Future` which register callbacks and return `Future's`
 * `.thenError()` is not shown but any exception would cause `.then()'s` to be skipped and `.thenError()` to be called.
 
