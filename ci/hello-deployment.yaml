@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-deployment
+  labels:
+    app: hello
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hello
+  template:
+    metadata:
+      labels:
+        app: hello
+    spec:
+      containers:
+      - name: hello
+        image: localhost:32000/hello:latest  # Use this if you pushed to the registry
+        # image: hello:latest  # Use this if you imported directly and set imagePullPolicy: Never
+        ports:
+        - containerPort: 8080
+        - containerPort: 22
+        # imagePullPolicy: Never  # Uncomment this if you imported the image directly
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-service
+spec:
+  selector:
+    app: hello
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8080
+  type: NodePort
