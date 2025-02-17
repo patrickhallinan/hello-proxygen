@@ -11,10 +11,10 @@ There are two images:
 == to run docker as non-root user
 
 ```
-sudo usermod -aG docker <user>
+sudo usermod -aG docker $USER
 ```
 
-must do this every time:
+update current shell:
 
 ```
 newgrp docker
@@ -27,9 +27,18 @@ NOTE: Failed to build proxygen in docker on ancient hardware.
 
 === docker build
 
+==== build hello-base
 ```
 docker build . -t hello-base:latest -f hello-base.docker
 ```
+
+low memory:
+
+```
+docker build . -t hello-base:latest -f hello-base.docker --build-arg BUILD_JOBS=1
+```
+
+==== build hello-base
 
 ```
 docker build . -t hello:latest -f hello.docker
@@ -37,9 +46,13 @@ docker build . -t hello:latest -f hello.docker
 
 === docker buildx
 
+==== build hello-base
+
 ```
 docker buildx build -f hello-base.docker  -t hello-base:latest --load .
 ```
+
+==== build hello
 
 ```
 docker buildx build -f hello.docker  -t hello:latest --load .
