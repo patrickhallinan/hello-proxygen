@@ -38,7 +38,7 @@ low memory:
 docker build . -t hello-base:latest -f hello-base.docker --build-arg BUILD_JOBS=1
 ```
 
-==== build hello-base
+==== build hello
 
 ```
 docker build . -t hello:latest -f hello.docker
