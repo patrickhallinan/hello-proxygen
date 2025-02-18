@@ -1,0 +1,159 @@
+= continuous integration (CI)
+
+== create docker images
+
+links
+
+== microk8s registry
+
+=== point the image to the local registry:
+
+```
+docker tag <image-name> <host:port>/<new-image-name> # same name by convention
+```
+
+```
+docker tag hello:latest localhost:32000/hello:latest
+```
+
+=== push to registry:
+
+```
+docker push localhost:32000/hello:latest
+```
+
+=== view registry
+
+==== repositories
+
+```
+curl -X GET http://localhost:32000/v2/_catalog
+```
+
+output: `{"repositories":["hello"]}`
+
+==== tags
+
+```
+patrick@Monster:/mnt/d/hello/ci$ curl -X GET http://localhost:32000/v2/hello/tags/list
+```
+
+output: `{"name":"hello","tags":["latest"]}`
+
+
+== No Registry (TEST THIS!)
+
+
+```
+docker build . -t patrick/app:latest -f hello.docker
+```
+
+```
+docker save patrick/app:latest | microk8s ctr image import -
+```
+
+
+
+== deploy
+
+```
+microk8s kubectl apply -f hello-deployment.yaml
+```
+
+```
+microk8s kubectl get deployments
+microk8s kubectl get pods
+microk8s kubectl get services
+```
+
+=== get node port
+
+```
+microk8s kubectl get svc hello-service
+```
+
+Look PORT(S) column for 80:XXXXX/TCP.  XXXXX is the NodePort
+
+=== invoke hello
+
+```
+http://localhost:<NodePort>
+```
+
+---------------------------------------------------------------------
+
+== thoughts
+
+git post-commit hook could be used to set this off
+
+initially we could set it off manually
+
+It should deploy a set of nodes to microk8s:
+
+- hello server
+- feature test
+- performance test
+- ci driver?
+
+Feature and performance tests should be trigger by http requests.
+
+- refactor test parts of cli tests into libraries
+- write an http server to execute the same tests from http requests    
+
+initially invoke tests with curl
+
+
+== provision kubernetes cluster
+
+```
+sudo apt update && sudo apt upgrade -y
+```
+
+```
+sudo snap install microk8s --classic
+```
+
+avoid sudo
+
+```
+sudo usermod -a -G microk8s $USER
+```
+
+```
+sudo chown -f -R $USER ~/.kube
+```
+
+```
+sudo usermod -aG docker $USER
+```
+
+```
+newgrp microk8s
+```
+
+verify
+
+```
+microk8s status
+```
+
+```
+alias kubectl='microk8s kubectl'
+```
+
+firewall changes for pod-to-pod and pod-to-internet
+```
+sudo ufw allow in on cni0
+sudo ufw allow out on cni0
+sudo ufw default allow routed
+```
+
+== deploy hello to kubernetes
+
+
+== steps
+
+1) 
+
+This implements the part of CI that builds and tests
+
