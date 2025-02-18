@@ -9,8 +9,8 @@ endif::[]
 = performance test
 
 This uses POST requests to test the performance of `hello` server. POST requests
-to `hello` server are echoed back so the bit rate is bidirectional, though it
-does not include HTTP overhead.
+to `hello` server are echoed back so the bit rate is bidirectional.  The bit rate does not include
+HTTP overhead.
 
 == usage
 
