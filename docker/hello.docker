@@ -2,6 +2,7 @@ FROM hello-base:latest
 
 USER ubuntu
 
+EXPOSE 8080
 RUN git pull origin master
 
 # build hello-proxygen
@@ -14,4 +15,7 @@ RUN make
 
 USER root
 
-CMD ["/usr/sbin/sshd", "-D"]
+COPY hello.sh /hello.sh
+
+ENTRYPOINT ["/hello.sh"]
+CMD ["/hello-proxygen/build/hello/hello"]

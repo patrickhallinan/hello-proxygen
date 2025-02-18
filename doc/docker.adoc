@@ -4,8 +4,8 @@ Run `hello-proxygen` in a docker container.
 
 There are two images:
 
-* `hello-base` : Based on `ubuntu-24.04`. Checks out and builds `proxygen` and `hello-proxygen` then runs `sshd`
-* `hello` : Based on `hello-base`. Pulls latest `hello-proxygen`, builds it, then runs `sshd`
+* `hello-base` : Based on `ubuntu-24.04`. Checks out and builds `proxygen` and `hello-proxygen`. Runs `sshd` for CMD[]
+* `hello` : Based on `hello-base`. Pulls and builds latest `hello-proxygen`. At runtime executes `sshd` and `hello`
 
 
 == to run docker as non-root user
