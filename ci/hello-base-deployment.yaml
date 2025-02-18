@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-base-deployment
+  labels:
+    app: hello-base
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hello-base
+  template:
+    metadata:
+      labels:
+        app: hello-base
+    spec:
+      containers:
+      - name: hello-base
+        image: localhost:32000/hello-base:latest  # Use this if you pushed to the registry
+        # image: hello-base:latest  # Use this if you imported directly and set imagePullPolicy: Never
+        imagePullPolicy: Always
+        # imagePullPolicy: Never  # if you imported the image directly
+        ports:
+        - containerPort: 22
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-base-service
+spec:
+  selector:
+    app: hello-base
+  ports:
+  - name: hello-base
+    protocol: TCP
+    port: 2222
+    targetPort: 22
+  type: NodePort

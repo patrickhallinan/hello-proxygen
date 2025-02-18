@@ -6,7 +6,7 @@ links
 
 == microk8s registry
 
-=== point the image to the local registry:
+=== tag the image for the local registry:
 
 ```
 docker tag <image-name> <host:port>/<new-image-name> # same name by convention
@@ -17,6 +17,8 @@ docker tag hello:latest localhost:32000/hello:latest
 ```
 
 === push to registry:
+
+NOTE: microk8s registry supports mutable tags.  In order to push same tag must re-tag new images.  
 
 ```
 docker push localhost:32000/hello:latest
