@@ -15,5 +15,6 @@ RUN make
 
 USER root
 
-ENTRYPOINT ["/hello-proxygen/docker/hello.sh"]
+COPY hello.sh /hello-proxygen/hello.sh
+ENTRYPOINT ["/hello-proxygen/hello.sh"]
 CMD ["/hello-proxygen/build/hello/hello"]

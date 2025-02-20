@@ -16,10 +16,8 @@ spec:
     spec:
       containers:
       - name: hello-base
-        image: localhost:32000/hello-base:latest  # Use this if you pushed to the registry
-        # image: hello-base:latest  # Use this if you imported directly and set imagePullPolicy: Never
+        image: localhost:32000/hello-base:latest
         imagePullPolicy: Always
-        # imagePullPolicy: Never  # if you imported the image directly
         ports:
         - containerPort: 22
 
@@ -32,7 +30,7 @@ spec:
   selector:
     app: hello-base
   ports:
-  - name: hello-base
+  - name: ssh
     protocol: TCP
     port: 2222
     targetPort: 22

@@ -1,8 +1,28 @@
 = continuous integration (CI)
 
+
+
+[plantuml, "microk8s.puml", svg]
+----
+
+'archimate #Technology "VPN Server"
+
+rectangle dockerfile
+rectangle image
+rectangle registry
+rectangle "microk8s" as microk8s
+
+dockerfile -right-> image : docker build . -t name:version
+image -left-> image : docker tag  name:version localhost:32000/name:version
+image -d-> registry : docker push localhost:32000/name:version
+registry -r-> microk8s : microk8s kubectl apply -f hello-deployment.yaml
+
+----
+
 == create docker images
 
-links
+link?
+
 
 == microk8s registry
 
@@ -18,10 +38,23 @@ docker tag hello:latest localhost:32000/hello:latest
 
 === push to registry:
 
-NOTE: microk8s registry supports mutable tags.  In order to push same tag must re-tag new images.  
+NOTE: microk8s registry supports mutable tags.  In order to push same tag must re-tag new images.
 
 ```
 docker push localhost:32000/hello:latest
+```
+
+In order to be able to verify which image is in the registry save this from the output:
+
+```
+latest: digest: sha256:c45644fe00d968bf66a6c8dd4e578225c44aa6cf568d951c85d1d51a06d03729 size: 6396
+```
+
+
+=== remove from registry
+
+```
+microk8s ctr images remove localhost:32000/hello:latest
 ```
 
 === view registry
@@ -37,10 +70,27 @@ output: `{"repositories":["hello"]}`
 ==== tags
 
 ```
-patrick@Monster:/mnt/d/hello/ci$ curl -X GET http://localhost:32000/v2/hello/tags/list
+curl -X GET http://localhost:32000/v2/hello/tags/list
 ```
 
 output: `{"name":"hello","tags":["latest"]}`
+
+```
+curl -I -H "Accept: application/vnd.docker.distribution.manifest.v2+json" http://localhost:32000/v2/hello/manifests/latest
+```
+
+```http
+HTTP/1.1 200 OK
+Content-Length: 6396
+Content-Type: application/vnd.docker.distribution.manifest.v2+json
+Docker-Content-Digest: sha256:c45644fe00d968bf66a6c8dd4e578225c44aa6cf568d951c85d1d51a06d03729
+Docker-Distribution-Api-Version: registry/2.0
+Etag: "sha256:c45644fe00d968bf66a6c8dd4e578225c44aa6cf568d951c85d1d51a06d03729"
+X-Content-Type-Options: nosniff
+Date: Thu, 20 Feb 2025 12:21:06 GMT
+```
+
+
 
 
 == No Registry (TEST THIS!)
@@ -55,18 +105,12 @@ docker save patrick/app:latest | microk8s ctr image import -
 ```
 
 
-
 == deploy
 
 ```
 microk8s kubectl apply -f hello-deployment.yaml
 ```
 
-```
-microk8s kubectl get deployments
-microk8s kubectl get pods
-microk8s kubectl get services
-```
 
 === get node port
 
@@ -100,7 +144,7 @@ It should deploy a set of nodes to microk8s:
 Feature and performance tests should be trigger by http requests.
 
 - refactor test parts of cli tests into libraries
-- write an http server to execute the same tests from http requests    
+- write an http server to execute the same tests from http requests
 
 initially invoke tests with curl
 
@@ -155,7 +199,7 @@ sudo ufw default allow routed
 
 == steps
 
-1) 
+1)
 
 This implements the part of CI that builds and tests
 

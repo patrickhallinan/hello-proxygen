@@ -76,11 +76,13 @@ docker run -ti -p 3000:22 hello-base:latest
 === hello image
 
 ```
-docker run -ti -p 3000:22 hello:latest
+sudo docker run -ti -p 3000:22 -p 8080:8080 hello:latest
 ```
 
 
 === SSH into container
+
+The port 3000 is based on the port mapping in the `docker run` command
 
 password:  "pass"
 
@@ -90,3 +92,11 @@ ssh ubuntu@localhost -p 3000
 
 project at `/hello-proxygen/`
 
+
+=== curl hello http endpoint
+
+The port 8080 is based on the port mapping in the `docker run` command
+
+```
+curl  http://localhost::8080
+```
