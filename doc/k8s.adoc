@@ -1,32 +1,35 @@
-= continuous integration (CI)
+= kubernetes (k8s)
 
+This shows how to deploy `hello-proxygen` images to microk8s.
 
+== deployment overview
 
 [plantuml, "microk8s.puml", svg]
 ----
 
-'archimate #Technology "VPN Server"
+'archimate #Technology "k8s"
 
 rectangle dockerfile
 rectangle image
 rectangle registry
-rectangle "microk8s" as microk8s
+rectangle "cluster" as cluster
 
-dockerfile -right-> image : docker build . -t name:version
+dockerfile -right-> image : docker build . -t name:version -f file.docker
 image -left-> image : docker tag  name:version localhost:32000/name:version
 image -d-> registry : docker push localhost:32000/name:version
-registry -r-> microk8s : microk8s kubectl apply -f hello-deployment.yaml
+registry -r-> cluster : microk8s kubectl apply -f hello-deployment.yaml
 
 ----
 
 == create docker images
 
-link?
+see https://github.com/patrickhallinan/hello-proxygen/blob/master/doc/docker.adoc[docker]
 
+== deploy images
 
-== microk8s registry
+=== microk8s registry
 
-=== tag the image for the local registry:
+=== tag images for local microk8s registry:
 
 ```
 docker tag <image-name> <host:port>/<new-image-name> # same name by convention
@@ -36,7 +39,7 @@ docker tag <image-name> <host:port>/<new-image-name> # same name by convention
 docker tag hello:latest localhost:32000/hello:latest
 ```
 
-=== push to registry:
+==== push to registry:
 
 NOTE: microk8s registry supports mutable tags.  In order to push same tag must re-tag new images.
 
@@ -50,16 +53,15 @@ In order to be able to verify which image is in the registry save this from the 
 latest: digest: sha256:c45644fe00d968bf66a6c8dd4e578225c44aa6cf568d951c85d1d51a06d03729 size: 6396
 ```
 
-
-=== remove from registry
+==== remove from registry
 
 ```
 microk8s ctr images remove localhost:32000/hello:latest
 ```
 
-=== view registry
+==== view registry
 
-==== repositories
+===== repositories
 
 ```
 curl -X GET http://localhost:32000/v2/_catalog
@@ -67,7 +69,7 @@ curl -X GET http://localhost:32000/v2/_catalog
 
 output: `{"repositories":["hello"]}`
 
-==== tags
+===== tags
 
 ```
 curl -X GET http://localhost:32000/v2/hello/tags/list
@@ -91,9 +93,7 @@ Date: Thu, 20 Feb 2025 12:21:06 GMT
 ```
 
 
-
-
-== No Registry (TEST THIS!)
+=== No Registry (TEST THIS!)
 
 
 ```
@@ -105,14 +105,16 @@ docker save patrick/app:latest | microk8s ctr image import -
 ```
 
 
-== deploy
+=== deployment
 
 ```
 microk8s kubectl apply -f hello-deployment.yaml
 ```
 
 
-=== get node port
+=== testing
+
+==== get node port
 
 ```
 microk8s kubectl get svc hello-service
@@ -125,81 +127,3 @@ Look PORT(S) column for 80:XXXXX/TCP.  XXXXX is the NodePort
 ```
 http://localhost:<NodePort>
 ```
-
----------------------------------------------------------------------
-
-== thoughts
-
-git post-commit hook could be used to set this off
-
-initially we could set it off manually
-
-It should deploy a set of nodes to microk8s:
-
-- hello server
-- feature test
-- performance test
-- ci driver?
-
-Feature and performance tests should be trigger by http requests.
-
-- refactor test parts of cli tests into libraries
-- write an http server to execute the same tests from http requests
-
-initially invoke tests with curl
-
-
-== provision kubernetes cluster
-
-```
-sudo apt update && sudo apt upgrade -y
-```
-
-```
-sudo snap install microk8s --classic
-```
-
-avoid sudo
-
-```
-sudo usermod -a -G microk8s $USER
-```
-
-```
-sudo chown -f -R $USER ~/.kube
-```
-
-```
-sudo usermod -aG docker $USER
-```
-
-```
-newgrp microk8s
-```
-
-verify
-
-```
-microk8s status
-```
-
-```
-alias kubectl='microk8s kubectl'
-```
-
-firewall changes for pod-to-pod and pod-to-internet
-```
-sudo ufw allow in on cni0
-sudo ufw allow out on cni0
-sudo ufw default allow routed
-```
-
-== deploy hello to kubernetes
-
-
-== steps
-
-1)
-
-This implements the part of CI that builds and tests
-
