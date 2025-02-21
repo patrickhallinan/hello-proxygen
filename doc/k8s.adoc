@@ -4,7 +4,15 @@ This shows how to deploy `hello-proxygen` images to microk8s.
 
 == deployment overview
 
-[plantuml, "microk8s.puml", svg]
+// for github
+ifeval::["{docdir}" == ""]
+image::microk8s-deployment-overview_puml.png[]
+endif::[]
+
+
+// for eclipse asciidoc plugin
+ifeval::["{docdir}" != ""]
+[plantuml, "microk8s-deployment-overview.puml", svg]
 ----
 
 'archimate #Technology "k8s"
@@ -18,8 +26,9 @@ dockerfile -right-> image : docker build . -t name:version -f file.docker
 image -left-> image : docker tag  name:version localhost:32000/name:version
 image -d-> registry : docker push localhost:32000/name:version
 registry -r-> cluster : microk8s kubectl apply -f hello-deployment.yaml
-
 ----
+endif::[]
+
 
 == create docker images
 
@@ -56,7 +65,6 @@ output: `{"name":"hello","tags":["latest"]}`
 
 === check that the correct image is in the registry
 
-
 Get the digest for the image:
 
 ```
@@ -80,6 +88,7 @@ X-Content-Type-Options: nosniff
 Date: Thu, 20 Feb 2025 12:21:06 GMT
 ```
 
+
 == deploy
 
 ```
@@ -98,6 +107,7 @@ output:
 NAME                                    READY   STATUS    RESTARTS      AGE
 hello-deployment-6bf49db44b-gj4bq       1/1     Running   0             22h
 ```
+
 
 == test
 
