@@ -1,3 +1,7 @@
+ifeval::["{docdir}" == ""]
+:imagesdir: image
+endif::[]
+
 = kubernetes (k8s)
 
 This shows how to deploy `hello-proxygen` images to microk8s.
@@ -71,6 +75,14 @@ Get the digest for the image:
 docker images --digests
 ```
 
+```
+REPOSITORY                   TAG       DIGEST                                                                    IMAGE ID       CREATED        SIZE
+hello                        latest    <none>                                                                    5d9787972e3f   43 hours ago   11.5GB
+localhost:32000/hello        latest    sha256:c45644fe00d968bf66a6c8dd4e578225c44aa6cf568d951c85d1d51a06d03729   5d9787972e3f   43 hours ago   11.5GB
+hello-base                   latest    <none>                                                                    e903aa3333ba   5 days ago     11.2GB
+ubuntu                       24.04     sha256:72297848456d5d37d1262630108ab308d3e9ec7ed1c3286a32fe09856619a782   a04dc4851cbc   3 weeks ago    78.1MB
+```
+
 Verify against `Docker-Content-Digest` in the registry manifest:
 
 ```
@@ -81,11 +93,11 @@ curl -I -H "Accept: application/vnd.docker.distribution.manifest.v2+json" http:/
 HTTP/1.1 200 OK
 Content-Length: 6396
 Content-Type: application/vnd.docker.distribution.manifest.v2+json
-: sha256:c45644fe00d968bf66a6c8dd4e578225c44aa6cf568d951c85d1d51a06d03729
+Docker-Content-Digest: sha256:c45644fe00d968bf66a6c8dd4e578225c44aa6cf568d951c85d1d51a06d03729
 Docker-Distribution-Api-Version: registry/2.0
 Etag: "sha256:c45644fe00d968bf66a6c8dd4e578225c44aa6cf568d951c85d1d51a06d03729"
 X-Content-Type-Options: nosniff
-Date: Thu, 20 Feb 2025 12:21:06 GMT
+Date: Fri, 21 Feb 2025 13:58:07 GMT
 ```
 
 
@@ -101,7 +113,7 @@ microk8s kubectl apply -f hello-deployment.yaml
 microk8s kubectl get pods
 ```
 
-output: 
+output:
 
 ```
 NAME                                    READY   STATUS    RESTARTS      AGE
@@ -130,7 +142,7 @@ kubernetes           ClusterIP   10.152.183.1     <none>        443/TCP         
 curl http://10.152.183.102
 ```
 
-or 
+or
 
 ```
 curl http://localhost:30486
