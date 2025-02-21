@@ -1,5 +1,7 @@
 FROM ubuntu:24.04
 
+ARG BUILD_JOBS=8
+
 RUN apt-get update
 RUN apt-get install -y gcc g++ gdb
 RUN apt-get install -y clang libfast-float-dev
@@ -29,7 +31,7 @@ USER ubuntu
 # build proxygen
 WORKDIR /hello-proxygen/proxygen/proxygen/
 RUN git checkout fd53add59
-RUN ./build.sh
+RUN ./build.sh -j $BUILD_JOBS
 
 # build hello-proxygen
 WORKDIR /hello-proxygen/

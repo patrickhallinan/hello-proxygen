@@ -12,6 +12,7 @@ Tested on macOS Sonoma (14.7.1), ubuntu 24.04 (on Windows 11 in a VM and in WSL)
 - [feature test](https://github.com/patrickhallinan/hello-proxygen/blob/master/doc/feature-test.adoc)
 - [performance test](https://github.com/patrickhallinan/hello-proxygen/blob/master/doc/performance-test.adoc)
 - [docker](https://github.com/patrickhallinan/hello-proxygen/blob/master/doc/docker.adoc)
+- [kubernetes (microk8s)](https://github.com/patrickhallinan/hello-proxygen/blob/master/doc/k8s.adoc)
 
 
 ## get repo

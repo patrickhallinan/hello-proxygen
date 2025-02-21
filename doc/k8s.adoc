@@ -1,0 +1,148 @@
+= kubernetes (k8s)
+
+This shows how to deploy `hello-proxygen` images to microk8s.
+
+== deployment overview
+
+// for github
+ifeval::["{docdir}" == ""]
+image::microk8s-deployment-overview_puml.png[]
+endif::[]
+
+
+// for eclipse asciidoc plugin
+ifeval::["{docdir}" != ""]
+[plantuml, "microk8s-deployment-overview.puml", svg]
+----
+
+'archimate #Technology "k8s"
+
+rectangle dockerfile
+rectangle image
+rectangle registry
+rectangle "cluster" as cluster
+
+dockerfile -right-> image : docker build . -t name:version -f file.docker
+image -left-> image : docker tag  name:version localhost:32000/name:version
+image -d-> registry : docker push localhost:32000/name:version
+registry -r-> cluster : microk8s kubectl apply -f hello-deployment.yaml
+----
+endif::[]
+
+
+== create docker images
+
+see https://github.com/patrickhallinan/hello-proxygen/blob/master/doc/docker.adoc[docker]
+
+
+== add to registry
+
+=== tag images with registry prefix:
+
+```
+docker tag <image-name> <host:port>/<new-image-name>
+```
+
+```
+docker tag hello:latest localhost:32000/hello:latest
+```
+
+=== push to registry:
+
+NOTE: microk8s registry supports mutable tags but MUST re-tag new images with `registry:port` prefix
+
+```
+docker push localhost:32000/hello:latest
+```
+
+=== verify image tags in registry
+
+```
+curl -X GET http://localhost:32000/v2/hello/tags/list
+```
+
+output: `{"name":"hello","tags":["latest"]}`
+
+=== check that the correct image is in the registry
+
+Get the digest for the image:
+
+```
+docker images --digests
+```
+
+Verify against `Docker-Content-Digest` in the registry manifest:
+
+```
+curl -I -H "Accept: application/vnd.docker.distribution.manifest.v2+json" http://localhost:32000/v2/hello/manifests/latest
+```
+
+```http
+HTTP/1.1 200 OK
+Content-Length: 6396
+Content-Type: application/vnd.docker.distribution.manifest.v2+json
+: sha256:c45644fe00d968bf66a6c8dd4e578225c44aa6cf568d951c85d1d51a06d03729
+Docker-Distribution-Api-Version: registry/2.0
+Etag: "sha256:c45644fe00d968bf66a6c8dd4e578225c44aa6cf568d951c85d1d51a06d03729"
+X-Content-Type-Options: nosniff
+Date: Thu, 20 Feb 2025 12:21:06 GMT
+```
+
+
+== deploy
+
+```
+microk8s kubectl apply -f hello-deployment.yaml
+```
+
+=== verify deployment
+
+```
+microk8s kubectl get pods
+```
+
+output: 
+
+```
+NAME                                    READY   STATUS    RESTARTS      AGE
+hello-deployment-6bf49db44b-gj4bq       1/1     Running   0             22h
+```
+
+
+== test
+
+Get information about running services
+
+```
+microk8s kubectl get services
+```
+
+```
+NAME                 TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)          AGE
+hello-service        NodePort    10.152.183.102   <none>        80:30486/TCP     22h
+hello-ssh-service    NodePort    10.152.183.147   <none>        2222:32385/TCP   22h
+kubernetes           ClusterIP   10.152.183.1     <none>        443/TCP          4d14h
+```
+
+`hello-service` is the `hello` http service and it's accessible at `10.152.183.102 port 80` and also on `localhost` via node port `30486`.
+
+```
+curl http://10.152.183.102
+```
+
+or 
+
+```
+curl http://localhost:30486
+```
+
+Hello$
+
+
+Similarly, ssh is available at `10.152.183.147 port 2222` and `localhost port 32385`
+
+```
+ssh ubuntu@10.152.183.147 -p 2222
+```
+
+password:  `pass`
