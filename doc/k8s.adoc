@@ -148,9 +148,6 @@ or
 curl http://localhost:30486
 ```
 
-Hello$
-
-
 Similarly, ssh is available at `10.152.183.147 port 2222` and `localhost port 32385`
 
 ```
