@@ -4,7 +4,7 @@ endif::[]
 
 = feature-test
 
-This uses the `HttpClient` to feature tests `hello` HTTP server.  The server returns "Hello" on a GET request and on a POST request echoes the posted content.
+This uses the `HttpClient` to feature test `hello` HTTP server.  The server returns "Hello" on a GET request and on a POST request echoes the posted content.
 
 == example
 
