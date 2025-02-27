@@ -22,7 +22,8 @@ if(POLICY CMP0167)
     cmake_policy(SET CMP0167 NEW)
 endif()
 
-set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+# set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+# boost context not found on rocky linux with suffix .a
 
 find_library(SNAPPY_LIB snappy)
 
