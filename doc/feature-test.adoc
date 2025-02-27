@@ -8,7 +8,7 @@ This uses the `HttpClient` to feature tests `hello` HTTP server.  The server ret
 
 == example
 
-The test works but the Test class is kind of useless.  A mental placeholder.
+The test works but the FeatureTest class is kind of useless.  A mental placeholder.
 
 [options="header", cols="5,3"]
 |===
@@ -17,7 +17,7 @@ The test works but the Test class is kind of useless.  A mental placeholder.
 a|
 [source, c++]
 ----
-void Test::run() {
+void FeatureTest::run() {
   eventBase_.runInEventBaseThread([http=client_.get()]() {
     return http->connect()
       .thenValue([http](folly::Unit) {
@@ -37,7 +37,7 @@ void Test::run() {
 }
 
 a|
-* `Test::run()` puts a callback on the EventBase's queue. Later the event loop will dequeue and run the callback.
+* `FeatureTest::run()` puts a callback on the EventBase's queue. Later the event loop will dequeue and run the callback.
 * When the callback is run, `http->connect()` queues a callback to the `EventBase's` queue and returns a `Future`
 * `.thenValue()` continuations are called on each `Future` which register callbacks and return `Future's`
 * `.thenError()` is not shown but any exception would cause `.then()'s` to be skipped and `.thenError()` to be called.
@@ -93,7 +93,7 @@ hide footbox
 
 participant "**main()**" as main  #LightGreen
 participant "**folly::Init**" as Init
-participant "**Test**" as test  #LightGreen
+participant "**FeatureTest**" as test  #LightGreen
 participant "**EventBase**" as EventBase
 participant "**HttpClient**" as HttpClient  #LightGreen
 participant "**HTTPConnector**" as HTTPConnector
@@ -137,7 +137,7 @@ hide footbox
 participant "**EventBase**" as EventBase
 participant "**HttpClient**" as HttpClient  #LightGreen
 participant "**Promise**" as Promise
-participant "**Test**" as test  #LightGreen
+participant "**FeatureTest**" as test  #LightGreen
 participant "**TransactionHandler**" as TransactionHandler  #LightGreen
 participant "**HTTPUpstreamSession**" as HTTPUpstreamSession
 participant "**HTTPTransaction**" as HTTPTransaction

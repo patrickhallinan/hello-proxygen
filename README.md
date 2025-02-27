@@ -16,10 +16,12 @@ Tested on macOS Sonoma (14.7.1), ubuntu 24.04 (on Windows 11 in a VM and in WSL)
 
 
 ## get repo
+
+**NOTE:** It's easy to miss `--recurse-submodules` when cloning repo.
+
 ```
 git clone --recurse-submodules  git@github.com:patrickhallinan/hello-proxygen
 ```
-
 
 ## install dependencies
 
@@ -48,6 +50,8 @@ sudo apt install clang cmake libfast-float-dev
 
 ## build proxygen
 
+To build with `clang` set `clang` as your compiler by exporting environment variables before running the build script:
+
 **From project root**
 
 ```bash
@@ -64,6 +68,25 @@ If memory is low and cannot be increased the number of jobs can be reduced like 
 
 It built fine on a chromebook having 8 GB of memory with the number of jobs set to 1.
 
+### for rtags support on ubuntu (others not tested)
+
+In order to use `rtags` on `proxygen` itself you must build with `clang` and generate `compile_commands.json`.
+
+#### install `bear`
+
+```
+sudo apt-get install bear
+```
+
+#### build `proxygen` using `clang` and `bear`
+
+```
+export CC=clang CXX=clang++
+```
+
+```
+bear -- ./build.sh
+```
 
 
 ## build hello-proxygen

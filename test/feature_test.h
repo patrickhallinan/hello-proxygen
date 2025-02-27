@@ -10,9 +10,9 @@ class EventBase;
 }
 
 
-class Test {
+class FeatureTest {
 public:
-    Test(folly::EventBase& eventBase);
+    FeatureTest(folly::EventBase& eventBase);
 
     void run();
 

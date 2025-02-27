@@ -1,9 +1,8 @@
-#include "Test.h"
+#include "performance_test.h"
 
 #include "HttpClient.h"
 
 #include <folly/futures/ThreadWheelTimekeeper.h>
-#include <folly/init/Init.h>
 #include <folly/io/async/EventBase.h>
 #include <gflags/gflags.h>
 
@@ -22,30 +21,8 @@ DEFINE_int32(payload_size, 2000, "number of bytes to send in each request");
 DEFINE_bool(validate_content, false, "verify response content equals request content");
 
 
-void performance_test(folly::EventBase*);
-
-
 // We really only need atomic<> if was have multiple event bases (i.e. threads)
 std::atomic<int> requestCount(0);
-
-
-int main(int argc, char* argv[]) {
-    FLAGS_logtostderr = true;
-    FLAGS_minloglevel = 0;
-
-    folly::Init _{&argc, &argv, /*removeFlags=*/false};
-
-    folly::EventBase eventBase;
-
-    performance_test(&eventBase);
-
-    // test does not run until eventBase.loop()
-    eventBase.loop();
-
-    LOG(INFO) << "Exit main()\n";
-
-    return 0;
-}
 
 
 proxygen::HTTPHeaders httpHeaders() {
@@ -53,7 +30,8 @@ proxygen::HTTPHeaders httpHeaders() {
 
     auto host = fmt::format("{}:{}", FLAGS_target_host, FLAGS_target_port);
     headers.add(proxygen::HTTP_HEADER_HOST, host);
-    headers.add(proxygen::HTTP_HEADER_USER_AGENT, "test-client");
+    headers.add(proxygen::HTTP_HEADER_USER_AGENT, "performance-test");
+    headers.add(proxygen::HTTP_HEADER_CACHE_CONTROL, "no-store");
     headers.add(proxygen::HTTP_HEADER_ACCEPT, "*/*");
 
     return headers;

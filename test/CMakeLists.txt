@@ -1,12 +1,19 @@
 
-add_executable(test
-    Test.cpp
-
+add_executable(ft
+    ft_main.cpp
     feature_test.cpp
 )
 
 
-add_executable(performance
+add_executable(perf
+    perf_main.cpp
+    performance_test.cpp
+)
+
+
+add_executable(test
+    test_server_main.cpp
+    feature_test.cpp
     performance_test.cpp
 )
 
@@ -25,14 +32,17 @@ set(TARGET_LIBRARIES
     ${SODIUM_LDFLAGS}
 
     dl
-    gflags
-    glog
     pthread
     fmt
+    gflags
+    glog
+
     OpenSSL::SSL
     lzma
-    PkgConfig::lz4
     OpenSSL::Crypto
+
+    PkgConfig::lz4
+
     z
     zstd
     ${LIBEVENT_LIBRARIES}
@@ -54,14 +64,30 @@ else()
 endif()
 
 
-target_link_libraries(test
+target_link_libraries(ft
 PRIVATE
     ${TARGET_LIBRARIES}
 )
 
 
-target_link_libraries(performance
+target_link_libraries(perf
 PRIVATE
     ${TARGET_LIBRARIES}
+)
+
+
+# for rocky linux
+find_library(BZ2_LIB bz2)
+if(BZ2_LIB)
+    list(APPEND TARGET_LIBRARIES bz2)
+endif()
+
+
+target_link_libraries(test
+PRIVATE
+    proxygenhttpserver
+
+    ${TARGET_LIBRARIES}
+    ${SNAPPY_LIB}
 )
 

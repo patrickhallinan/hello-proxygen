@@ -1,23 +1,22 @@
-#include "Test.h"
+#include "feature_test.h"
 
 #include "HttpClient.h"
 
 #include <folly/io/async/EventBase.h>
 #include <fmt/format.h>
-#include <gflags/gflags_declare.h>
 
 #include <cstdlib>
 #include <chrono>
 
 
-DECLARE_string(hello_host);
-DECLARE_int32(hello_port);
+DEFINE_string(hello_host, "127.0.0.1", "IP address");
+DEFINE_int32(hello_port, 8080, "HTTP port");
 
 
 static proxygen::HTTPHeaders httpHeaders();
 
 
-Test::Test(folly::EventBase& eventBase)
+FeatureTest::FeatureTest(folly::EventBase& eventBase)
     : eventBase_{eventBase} {
 
     auto defaultTimeout = std::chrono::milliseconds(5000);
@@ -31,7 +30,7 @@ Test::Test(folly::EventBase& eventBase)
 }
 
 
-void Test::run() {
+void FeatureTest::run() {
     eventBase_.runInEventBaseThread([httpClient=httpClient_.get()]() {
 
         static bool passed;
@@ -95,7 +94,8 @@ proxygen::HTTPHeaders httpHeaders() {
 
     auto host = fmt::format("{}:{}", FLAGS_hello_host, FLAGS_hello_port);
     headers.add(proxygen::HTTP_HEADER_HOST, host);
-    headers.add(proxygen::HTTP_HEADER_USER_AGENT, "test-client");
+    headers.add(proxygen::HTTP_HEADER_USER_AGENT, "feature-test");
+    headers.add(proxygen::HTTP_HEADER_CACHE_CONTROL, "no-store");
     headers.add(proxygen::HTTP_HEADER_ACCEPT, "*/*");
 
     return headers;

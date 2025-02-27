@@ -5,6 +5,7 @@ Run `hello-proxygen` in a docker container.
 There are two images:
 
 * `hello-base` : Based on `ubuntu-24.04`. Checks out and builds `proxygen` and `hello-proxygen`. Runs `sshd` for CMD[]
+    ** This would need to be rebuilt for a new proxygen version.
 * `hello` : Based on `hello-base`. Pulls and builds latest `hello-proxygen`. At runtime executes `sshd` and `hello`
 
 

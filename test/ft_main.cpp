@@ -1,12 +1,7 @@
-#include "Test.h"
+#include "feature_test.h"
 
 #include <folly/init/Init.h>
 #include <folly/io/async/EventBase.h>
-#include <gflags/gflags.h>
-
-
-DEFINE_string(hello_host, "127.0.0.1", "IP address");
-DEFINE_int32(hello_port, 8080, "HTTP port");
 
 
 int main(int argc, char* argv[]) {
@@ -17,7 +12,7 @@ int main(int argc, char* argv[]) {
 
     folly::EventBase eventBase;
 
-    Test test(eventBase);
+    FeatureTest test(eventBase);
     test.run();
 
     // Test does not run until eventBase.loop()
