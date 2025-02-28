@@ -5,6 +5,7 @@
 #include <proxygen/httpserver/RequestHandler.h>
 #include <proxygen/httpserver/ResponseBuilder.h>
 
+#include <nlohmann/json.hpp>
 
 using namespace proxygen;
 
@@ -44,11 +45,15 @@ public:
         delete this;
     }
 private:
-    void sendResponse(const std::string& response) {
+    void sendResponse(const std::string& result) {
+
+        nlohmann::json response;
+        response["result"] = result;
+
         ResponseBuilder(downstream_)
             .status(200, "OK")
             .header("Content-Type", "text/plain")
-            .body(response)
+            .body(response.dump())
             .sendWithEOM();
     }
 };
