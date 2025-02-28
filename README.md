@@ -44,7 +44,7 @@ script/rocky-linux-9-deps.sh
 ### ubuntu 24.04 and debian 12
 
 ```bash
-sudo apt install clang cmake libfast-float-dev libnlohmann-json3-dev
+sudo apt install clang cmake libfast-float-dev nlohmann-json3-dev
 ```
 
 
