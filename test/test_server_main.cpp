@@ -5,14 +5,18 @@
 #include <proxygen/httpserver/RequestHandler.h>
 #include <proxygen/httpserver/ResponseBuilder.h>
 
+
 using namespace proxygen;
 
 
 class TestHandler : public RequestHandler {
     folly::EventBase* eb_;
+    FeatureTest ft_;
+
 public:
     TestHandler(folly::EventBase* eb)
         : eb_{eb}
+        , ft_{*eb}
     {}
 
     void onRequest(std::unique_ptr<HTTPMessage> headers) noexcept override {
@@ -22,15 +26,14 @@ public:
     }
 
     void onEOM() noexcept override {
-        ResponseBuilder(downstream_)
-            .status(200, "OK")
-            .header("Content-Type", "text/plain")
-            .body("test\n")
-            .sendWithEOM();
+
+        ft_.run()
+           .thenValue([this](std::string&& result) {
+               sendResponse(result);
+           });
     }
 
     void onUpgrade(UpgradeProtocol protocol) noexcept override {
-        // No upgrades (e.g., WebSocket)
     }
 
     void requestComplete() noexcept override {
@@ -39,6 +42,14 @@ public:
 
     void onError(ProxygenError err) noexcept override {
         delete this;
+    }
+private:
+    void sendResponse(const std::string& response) {
+        ResponseBuilder(downstream_)
+            .status(200, "OK")
+            .header("Content-Type", "text/plain")
+            .body(response)
+            .sendWithEOM();
     }
 };
 
@@ -68,8 +79,10 @@ thread_local folly::EventBase* TestHandlerFactory::eb_{nullptr};
 int main(int argc, char* argv[]) {
     gflags::ParseCommandLineFlags(&argc, &argv, true);
 
+    const unsigned cores = std::thread::hardware_concurrency();
+
     HTTPServerOptions options;
-    //options.threads = folly::getCpuCount();
+    options.threads = cores? cores : 2;
     options.idleTimeout = std::chrono::milliseconds(60'000);
     options.shutdownOn = {SIGINT, SIGTERM};
     options.handlerFactories = RequestHandlerChain()

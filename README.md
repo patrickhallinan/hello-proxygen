@@ -1,6 +1,6 @@
 # README
 
-This is a starter project for anyone interested in using [proxygen](https://github.com/facebook/proxygen), Facebook's event driven HTTP framework.
+This is a starter (fixer-upper) project for anyone interested in using [proxygen](https://github.com/facebook/proxygen), Facebook's event driven HTTP framework.
 
 Tested on macOS Sonoma (14.7.1), ubuntu 24.04 (on Windows 11 in a VM and in WSL), Debian 12 Bookworm on a chromebook, and Rocky Linux 9 (red hat clone)
 

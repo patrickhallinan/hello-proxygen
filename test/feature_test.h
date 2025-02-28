@@ -14,11 +14,14 @@ class FeatureTest {
 public:
     FeatureTest(folly::EventBase& eventBase);
 
-    void run();
+    folly::Future<std::string> run();
 
 private:
     folly::EventBase& eventBase_;
+    folly::Promise<std::string> completed_;
     std::unique_ptr<HttpClient> httpClient_;
+    std::string failMsg_;
+    bool passed_{true};
 };
 
 
@@ -29,3 +32,4 @@ private:
         throw std::runtime_error(msg); \
     } \
 }
+

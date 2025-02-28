@@ -13,9 +13,13 @@ int main(int argc, char* argv[]) {
     folly::EventBase eventBase;
 
     FeatureTest test(eventBase);
-    test.run();
+    test.run()
+        .thenValue([&eventBase](std::string&& result) {
+            LOG(INFO) << result;
+            eventBase.terminateLoopSoon();
+        });
 
-    // Test does not run until eventBase.loop()
+    // this drives the test and everything runs in this thread
     eventBase.loop();
 
     LOG(INFO) << "Exit main()\n";

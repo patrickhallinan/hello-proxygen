@@ -5,7 +5,6 @@
 #include <folly/io/async/EventBase.h>
 #include <fmt/format.h>
 
-#include <cstdlib>
 #include <chrono>
 
 
@@ -30,35 +29,32 @@ FeatureTest::FeatureTest(folly::EventBase& eventBase)
 }
 
 
-void FeatureTest::run() {
-    eventBase_.runInEventBaseThread([httpClient=httpClient_.get()]() {
+folly::Future<std::string> FeatureTest::run() {
 
-        static bool passed;
+    eventBase_.runInEventBaseThread([this]() {
 
-        passed = true;
-
-        return httpClient->connect()
-                          .thenValue([httpClient](folly::Unit) {
+        return httpClient_->connect()
+                          .thenValue([this](folly::Unit) {
                               LOG(INFO) << "Connected!";
 
-                              return httpClient->GET();
+                              return httpClient_->GET();
                           })
-                          .thenValue([httpClient](const HttpResponse& response) {
+                          .thenValue([this](const HttpResponse& response) {
                               LOG(INFO) << "Status: " << response.status()
                                   << ", Content: " << response.content();
 
                               assert_equal(response.status(), 200);
                               assert_equal(response.content(), "Hello");
 
-                              return httpClient->POST("Echo");
+                              return httpClient_->POST("Echo");
                           })
-                          .thenValue([httpClient](const HttpResponse& response) {
+                          .thenValue([this](const HttpResponse& response) {
                               LOG(INFO) << "Status: " << response.status()
                                   << ", Content: " << response.content();
 
                               assert_equal(response.content(), "Echo");
 
-                              return httpClient->POST("");
+                              return httpClient_->POST("");
                           })
                           .thenValue([](const HttpResponse& response) {
                               LOG(INFO) << "Status: " << response.status()
@@ -67,25 +63,25 @@ void FeatureTest::run() {
                               assert_equal(response.content(), "CONTENT MISSING");
                           })
 
-                          .thenError(folly::tag_t<std::exception>{}, [](const std::exception& e) {
-                              passed = false;
-                              LOG(INFO) << e.what();
+                          // TODO: distinguish between test failure and other exception
+                          .thenError(folly::tag_t<std::exception>{},
+                            [this](const std::exception& e) {
+
+                              passed_ = false;
+                              failMsg_ = e.what();
                           })
-                          .thenValue([httpClient](folly::Unit) {
-                              if (passed) {
-                                  LOG(INFO) << "PASSED";
+                          .thenValue([this](folly::Unit) {
+                              if (passed_) {
+                                  completed_.setValue("PASSED");
                               }
                               else {
-                                  LOG(INFO) << "FAILED";
+                                  auto msg = fmt::format("FAILED: {}", failMsg_);
+                                  completed_.setValue(msg);
                               }
-
-                              // XXX: Why does this wait 1m 12s after finishing the test?
-
-                              // HACK: Remove once exit delay is figured out.
-                              int status = passed? 0 : 1;
-                              exit(status);
                           });
     });
+
+    return completed_.getFuture();
 }
 
 
