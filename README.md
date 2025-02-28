@@ -30,7 +30,7 @@ git clone --recurse-submodules  git@github.com:patrickhallinan/hello-proxygen
 install `brew` then
 
 ```bash
-brew install cmake fast_float pkg-config
+brew install cmake fast_float pkg-config nlohmann-json
 ```
 
 ### rocky linux 9 (red hat clone)
