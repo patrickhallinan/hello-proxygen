@@ -12,27 +12,25 @@ using namespace proxygen;
 
 class TestHandler : public RequestHandler {
     folly::EventBase* eb_;
-    FeatureTest ft_;
+    std::unique_ptr<folly::IOBuf> buf_;
 
 public:
     TestHandler(folly::EventBase* eb)
         : eb_{eb}
-        , ft_{*eb}
     {}
 
     void onRequest(std::unique_ptr<HTTPMessage> headers) noexcept override {
     }
 
-    void onBody(std::unique_ptr<folly::IOBuf> body) noexcept override {
+    void onBody(std::unique_ptr<folly::IOBuf> chunk) noexcept override {
+        if (buf_) {
+            buf_->prependChain(std::move(chunk));
+        } else {
+            buf_ = std::move(chunk);
+        }
     }
 
-    void onEOM() noexcept override {
-
-        ft_.run()
-           .thenValue([this](std::string&& result) {
-               sendResponse(result);
-           });
-    }
+    //void onEOM() noexcept override {}
 
     void onUpgrade(UpgradeProtocol protocol) noexcept override {
     }
@@ -44,17 +42,69 @@ public:
     void onError(ProxygenError err) noexcept override {
         delete this;
     }
-private:
-    void sendResponse(const std::string& result) {
+protected:
+    std::string body() {
+        return buf_->moveToFbString().toStdString();
+    }
 
-        nlohmann::json response;
-        response["result"] = result;
+    void sendResponse(uint16_t statusCode,
+                      const std::string& statusMessage,
+                      const std::string& response) {
 
         ResponseBuilder(downstream_)
-            .status(200, "OK")
+            .status(statusCode, statusMessage)
             .header("Content-Type", "text/plain")
-            .body(response.dump())
+            .body(response)
             .sendWithEOM();
+    }
+};
+
+
+class FeatureTestHandler : public TestHandler {
+    FeatureTest ft_;
+
+public:
+    FeatureTestHandler(folly::EventBase* eb)
+        : TestHandler{eb}
+        , ft_{*eb}
+    {}
+
+    void onEOM() noexcept override {
+
+        ft_.run()
+           .thenValue([this](std::string&& result) {
+               nlohmann::json response;
+               response["result"] = result;
+
+               sendResponse(200, "OK", response.dump());
+           });
+
+    }
+};
+
+
+class UsageHandler: public TestHandler {
+public:
+    UsageHandler(folly::EventBase* eb)
+        : TestHandler(eb)
+    {}
+
+    void onEOM() noexcept override {
+        sendResponse(400, "Bad Request", usage());
+    }
+
+private:
+    std::string usage() {
+        return R"(USAGE:
+
+POST /feature-test
+Request body is the HTTP endpoint, like: http://locahost:8080
+
+POST /performance-test
+Request body is the HTTP endpoint, like: http://locahost:8080
+
+example:  curl -X POST -d "http://localhost:8080" http://localhost:8000/feature-test
+)";
     }
 };
 
@@ -64,16 +114,20 @@ class TestHandlerFactory : public RequestHandlerFactory {
 public:
     void onServerStart(folly::EventBase* eb) noexcept override {
         eb_ = eb;
-        LOG(INFO) << "TestHandlerFactory::onServerStart()";
     }
 
     void onServerStop() noexcept override {
         eb_ = nullptr;
-        LOG(INFO) << "TestHandlerFactory::onServerStop()";
     }
 
-    RequestHandler* onRequest(RequestHandler*, HTTPMessage*) noexcept override {
-        return new TestHandler(eb_);
+    RequestHandler* onRequest(RequestHandler*, HTTPMessage* httpMessage) noexcept override {
+        if (httpMessage->getMethodString() == "POST" && // change to enum
+            httpMessage->getPath() == "/feature-test") {
+
+            return new FeatureTestHandler(eb_);
+        } else {
+            return new UsageHandler(eb_);
+        }
     }
 };
 
