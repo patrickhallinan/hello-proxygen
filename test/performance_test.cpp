@@ -81,12 +81,13 @@ folly::Future<HttpClient*> send(HttpClient* client, std::string& payload) {
 
 folly::Future<folly::Unit> sendRequests(folly::EventBase* eventBase,
                                         std::vector<HttpClient*> clients,
-                                        std::string& payload) {
+                                        std::string payload) {
 
     std::vector<folly::Future<HttpClient*>> clientFutures;
 
+
     for (auto* client : clients) {
-    	// note: send() does not block
+    	// send() does not block
         clientFutures.push_back(send(client, payload));
     }
 
@@ -199,37 +200,34 @@ std::vector<std::string> results(double total_time_ms) {
 
 folly::Future<std::vector<std::string>> performance_test(folly::EventBase* eventBase) {
 
-    static std::chrono::time_point<std::chrono::high_resolution_clock> start;
-
     using namespace std;
     using namespace folly;
 
     auto promise = make_shared< Promise<vector<string>> >();
 
     getClients(eventBase, FLAGS_num_connections)
-        .thenValue([eventBase](vector<HttpClient*> httpClients) {
+        .thenValue([eventBase, promise](vector<HttpClient*> httpClients) {
 
-            static string payload = makePayload(FLAGS_payload_size);
+            string payload = makePayload(FLAGS_payload_size);
 
-            start = std::chrono::high_resolution_clock::now();
+            auto start = std::chrono::high_resolution_clock::now();
 
             // XXX: maybe have sendRequests() return Future<vector<HttpClient*>>
-            return sendRequests(eventBase, httpClients, payload)
-                .thenValue([httpClients](folly::Unit) {
-                    return httpClients;
+            return sendRequests(eventBase, httpClients, std::move(payload))
+
+                .thenValue([promise, start, httpClients](folly::Unit) {
+
+                    auto end = std::chrono::high_resolution_clock::now();
+
+                    std::chrono::duration<double, milli> duration = end - start;
+
+                    auto lines = results(duration.count());
+
+                    promise->setValue(lines);
+
+                    for (auto& client : httpClients)
+                        delete client;
                 });
-        })
-        .thenValue([promise](vector<HttpClient*> clients) {
-
-            auto end = std::chrono::high_resolution_clock::now();
-
-            std::chrono::duration<double, milli> duration = end - start;
-
-            auto lines = results(duration.count());
-            promise->setValue(lines);
-
-            for (auto& client : clients)
-                delete client;
         });
 
     return promise->getFuture();

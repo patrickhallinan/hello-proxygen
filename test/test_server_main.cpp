@@ -11,9 +11,6 @@ using namespace proxygen;
 
 
 class TestHandler : public RequestHandler {
-    folly::EventBase* eb_;
-    std::unique_ptr<folly::IOBuf> buf_;
-
 public:
     TestHandler(folly::EventBase* eb)
         : eb_{eb}
@@ -42,7 +39,11 @@ public:
     void onError(ProxygenError err) noexcept override {
         delete this;
     }
+
 protected:
+    folly::EventBase* eb_;
+    std::unique_ptr<folly::IOBuf> buf_;
+
     std::string body() {
         return buf_->moveToFbString().toStdString();
     }
@@ -54,13 +55,13 @@ protected:
         ResponseBuilder(downstream_)
             .status(statusCode, statusMessage)
             .header("Content-Type", "text/plain")
-            .body(response)
+            .body(response+"\n")
             .sendWithEOM();
     }
 };
 
 
-class FeatureTestHandler : public TestHandler {
+class FeatureTestHandler: public TestHandler {
     FeatureTest ft_;
 
 public:
@@ -83,6 +84,24 @@ public:
 };
 
 
+class PerformanceTestHandler: public TestHandler {
+public:
+    PerformanceTestHandler(folly::EventBase* eb)
+        : TestHandler{eb}
+    {}
+
+    void onEOM() noexcept override {
+
+        performance_test(eb_)
+           .thenValue([this](std::vector<std::string>&& lines) {
+
+               sendResponse(200, "OK", folly::join("\n", lines));
+           });
+
+    }
+};
+
+
 class UsageHandler: public TestHandler {
 public:
     UsageHandler(folly::EventBase* eb)
@@ -98,10 +117,10 @@ private:
         return R"(USAGE:
 
 POST /feature-test
-Request body is the HTTP endpoint, like: http://locahost:8080
+Request body is the hello server endpoint, default: http://locahost:8080
 
 POST /performance-test
-Request body is the HTTP endpoint, like: http://locahost:8080
+Request body is the hello server endpoint, default: http://locahost:8080
 
 example:  curl -X POST -d "http://localhost:8080" http://localhost:8000/feature-test
 )";
@@ -121,13 +140,17 @@ public:
     }
 
     RequestHandler* onRequest(RequestHandler*, HTTPMessage* httpMessage) noexcept override {
-        if (httpMessage->getMethodString() == "POST" && // change to enum
-            httpMessage->getPath() == "/feature-test") {
 
-            return new FeatureTestHandler(eb_);
-        } else {
-            return new UsageHandler(eb_);
+        if (httpMessage->getMethodString() == "POST") { // change to enum
+
+            if (httpMessage->getPath() == "/feature-test")
+                return new FeatureTestHandler(eb_);
+
+            else if (httpMessage->getPath() == "/performance-test")
+                return new PerformanceTestHandler(eb_);
         }
+
+        return new UsageHandler(eb_);
     }
 };
 
