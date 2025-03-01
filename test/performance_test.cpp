@@ -2,6 +2,7 @@
 
 #include "HttpClient.h"
 
+#include <fmt/format.h>
 #include <folly/futures/ThreadWheelTimekeeper.h>
 #include <folly/io/async/EventBase.h>
 #include <gflags/gflags.h>
@@ -171,33 +172,44 @@ folly::Future< std::vector<HttpClient*> > getClients(folly::EventBase* eventBase
 }
 
 
-void print_results(double total_time_ms) {
+std::vector<std::string> results(double total_time_ms) {
+
     double seconds = total_time_ms / 1000.0;
     double averageRequestTime = total_time_ms / FLAGS_number_of_requests;
     double requestRate = FLAGS_number_of_requests / seconds;
     double mbps = requestRate * 8 * FLAGS_payload_size / (1024*10240);
 
-    LOG(INFO) << "";
-    LOG(INFO) << "sent " << FLAGS_number_of_requests << " HTTP POST requests";
-    LOG(INFO) << "total time       : " << seconds << " seconds";
+    std::vector<std::string> lines;
 
-    LOG(INFO) << "content size     : " << FLAGS_payload_size << " bytes";
-    LOG(INFO) << "num connections  : " << FLAGS_num_connections << " connections";
+#define f fmt::format
 
-    LOG(INFO) << "avg request Time : " << averageRequestTime << " ms";
-    LOG(INFO) << "request rate     : " << requestRate << " requests/second";
-    LOG(INFO) << "bit rate         : " << mbps << " Mbps";
+    lines.push_back(f("sent {} HTTP POST requests", FLAGS_number_of_requests));
+    lines.push_back(f("total time: {} seconds", seconds));
+    lines.push_back(f("content size: {} bytes", FLAGS_payload_size));
+    lines.push_back(f("num connections: {} connections", FLAGS_num_connections));
+    lines.push_back(f("avg request Time: {} ms", averageRequestTime));
+    lines.push_back(f("request rate: {} requests/second", requestRate));
+    lines.push_back(f("bit rate: {} Mbps", mbps));
+
+#undef f
+
+    return lines;
 }
 
 
-void performance_test(folly::EventBase* eventBase) {
+folly::Future<std::vector<std::string>> performance_test(folly::EventBase* eventBase) {
 
     static std::chrono::time_point<std::chrono::high_resolution_clock> start;
 
-    getClients(eventBase, FLAGS_num_connections)
-        .thenValue([eventBase](std::vector<HttpClient*> httpClients) {
+    using namespace std;
+    using namespace folly;
 
-            static std::string payload = makePayload(FLAGS_payload_size);
+    auto promise = make_shared< Promise<vector<string>> >();
+
+    getClients(eventBase, FLAGS_num_connections)
+        .thenValue([eventBase](vector<HttpClient*> httpClients) {
+
+            static string payload = makePayload(FLAGS_payload_size);
 
             start = std::chrono::high_resolution_clock::now();
 
@@ -207,18 +219,18 @@ void performance_test(folly::EventBase* eventBase) {
                     return httpClients;
                 });
         })
-        .thenValue([](std::vector<HttpClient*> clients) {
+        .thenValue([promise](vector<HttpClient*> clients) {
 
             auto end = std::chrono::high_resolution_clock::now();
 
-            std::chrono::duration<double, std::milli> duration = end - start;
+            std::chrono::duration<double, milli> duration = end - start;
 
-            print_results(duration.count());
+            auto lines = results(duration.count());
+            promise->setValue(lines);
 
             for (auto& client : clients)
                 delete client;
-
-            // HACK: Figure out how to exit immediately after this ends and remove exit()
-            exit(0);
         });
+
+    return promise->getFuture();
 }

@@ -1,8 +1,14 @@
 #pragma once
 
+#include <folly/futures/Future.h>
+
+#include <string>
+#include <vector>
+
+
 namespace folly {
 class EventBase;
 }
 
 
-void performance_test(folly::EventBase*);
+folly::Future<std::vector<std::string>> performance_test(folly::EventBase*);

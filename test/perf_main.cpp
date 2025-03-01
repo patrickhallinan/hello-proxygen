@@ -12,9 +12,15 @@ int main(int argc, char* argv[]) {
 
     folly::EventBase eventBase;
 
-    performance_test(&eventBase);
+    performance_test(&eventBase)
+        .thenValue([&eventBase](std::vector<std::string>&& lines) {
 
-    // test does not run until eventBase.loop()
+            for (const auto& line : lines)
+                LOG(INFO) << line;
+
+            eventBase.terminateLoopSoon();
+        });
+
     eventBase.loop();
 
     LOG(INFO) << "Exit main()\n";
