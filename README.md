@@ -17,7 +17,7 @@ Tested on macOS Sonoma (14.7.1), ubuntu 24.04 (on Windows 11 in a VM and in WSL)
 
 ## get repo
 
-**NOTE:** It's easy to miss `--recurse-submodules` when cloning repo.
+**NOTE:** It's easy to miss `--recurse-submodules`
 
 ```
 git clone --recurse-submodules  git@github.com:patrickhallinan/hello-proxygen
@@ -116,14 +116,14 @@ hello/hello
 ### run feature test
 
 ```bash
-test/test
+test/ft
 ```
 
 
 ### run performance test
 
 ```bash
-test/performance
+test/perf
 ```
 
 
@@ -135,4 +135,47 @@ curl http://localhost:8080
 
 ```bash
 curl -X POST -d "echo" http://localhost:8080
+```
+
+
+### test server
+
+This was created to simplify automated testing.  It is relatively new
+
+#### run the server
+
+```bash
+test/test
+```
+
+options:
+
+```
+-test_server_host (IP address) type: string default: "0.0.0.0"
+-test_server_port (HTTP port) type: int32 default: 8000
+```
+
+#### api help
+
+```
+curl  http://localhost:8000
+```
+
+#### feature test
+
+```
+curl -X POST http://localhost:8000/feature-test
+```
+
+OR
+
+```
+curl -d '{"host":"localhost", "port":8765}' http://localhost:8000/feature-test
+```
+
+
+#### performance test
+
+```
+curl -X POST http://localhost:8000/feature-test
 ```

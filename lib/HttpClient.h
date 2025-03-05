@@ -19,15 +19,16 @@ public:
     // TODO: Replace url with host/port and put path in GET()/POST()
     HttpClient(folly::EventBase*,
                std::chrono::milliseconds timeout,
-               const proxygen::HTTPHeaders&,
-               const std::string& url);
+               const proxygen::HTTPHeaders&);
 
     virtual ~HttpClient() = default;
 
-    folly::Future<folly::Unit> connect();
+    folly::Future<folly::Unit> connect(const std::string& host, uint16_t port);
 
-    folly::Future<HttpResponse> GET();
-    folly::Future<HttpResponse> POST(const std::string& content);
+    folly::Future<HttpResponse> GET(const std::string& path);
+
+    folly::Future<HttpResponse> POST(const std::string& path,
+                                     const std::string& content);
 
     // TODO: Implement https
 
@@ -37,11 +38,12 @@ protected:
     void connectError(const folly::AsyncSocketException&) override;
 
 private:
-    proxygen::HTTPMessage createHttpMessage(proxygen::HTTPMethod, size_t contentLength=0);
+    proxygen::HTTPMessage createHttpMessage(proxygen::HTTPMethod,
+                                            const std::string& path,
+                                            size_t contentLength=0);
 
     folly::EventBase* eb_{nullptr};
     proxygen::HTTPHeaders headers_;
-    proxygen::URL url_;
 
     proxygen::HTTPUpstreamSession* session_;
 
@@ -50,6 +52,9 @@ private:
     std::unique_ptr<proxygen::HTTPConnector> httpConnector_;
 
     std::unique_ptr<folly::Promise<folly::Unit>> connectPromise_;
+
+    std::string host_;
+    std::uint16_t port_;
 
     // for metrics
     std::chrono::time_point<std::chrono::high_resolution_clock> connectStartTime_;

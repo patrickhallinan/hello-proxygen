@@ -10,36 +10,24 @@
 using namespace proxygen;
 
 
-// Feature Test
-DECLARE_string(hello_host);
-DECLARE_int32(hello_port);
-
-// Performance Test
-DECLARE_string(target_host);
-DECLARE_int32(target_port);
-
-DECLARE_int32(num_connections);
-DECLARE_int32(number_of_requests);
-DECLARE_int32(payload_size);
-DECLARE_bool(validate_content);
+DEFINE_string(test_server_host, "0.0.0.0", "IP address");
+DEFINE_int32(test_server_port, 8000, "HTTP port");
 
 
-void trySet(const nlohmann::json& config, const char* key) {
-    if (config.contains(key)) {
-        std::string value = config[key].dump();
-        gflags::SetCommandLineOption(key, value.c_str());
-    }
+template<typename T, typename U>
+void setFromConfig(const nlohmann::json& config, const char* key, T* value,
+                   U defaultValue) {
+
+    *value = config.contains(key)? config[key].get<T>() : defaultValue;
 }
 
 
-std::string defaultFlagValue(const char* flagName) {
-    gflags::CommandLineFlagInfo info;
-    if (gflags::GetCommandLineFlagInfo(flagName, &info)) {
-        return info.default_value;
-    }
-    else {
-        return fmt::format("'{}' gflag not found", flagName);
-    }
+template<typename T, typename U, typename... Args>
+void setFromConfig(const nlohmann::json& config, const char* key, T* value,
+                   U defaultValue, Args... args) {
+
+    setFromConfig(config, key, value, defaultValue);
+    setFromConfig(config, args...);
 }
 
 
@@ -83,25 +71,10 @@ protected:
         return body_;
     }
 
-    using Expected = folly::Expected<folly::Unit,std::string>;
-
-    Expected trySetFlags(std::vector<const char*> flags) {
-
-        auto json = folly::trimWhitespace(body());
-
-        if (! json.empty()) {
-            try {
-                auto config = nlohmann::json::parse(json.toString());
-
-                for (const char* flagName : flags) {
-                    trySet(config, flagName);
-                }
-            } catch(const nlohmann::json::exception& e) {
-                return folly::makeUnexpected(e.what());
-            }
-        }
-
-        return folly::unit;
+    static nlohmann::json config(std::string config) {
+        config = folly::trimWhitespace(config);
+        return config.empty()? nlohmann::json::parse("{}")
+                             : nlohmann::json::parse(config);
     }
 
     void sendResponse(uint16_t statusCode,
@@ -120,27 +93,27 @@ protected:
 class FeatureTestHandler: public TestHandler {
     std::unique_ptr<FeatureTest> ft_;
 
+    struct FeatureTestParams {
+        std::string host;
+        uint16_t port;
+    };
 public:
     FeatureTestHandler(folly::EventBase* eb)
         : TestHandler{eb}
     {}
 
     void onEOM() noexcept override {
-        // FIXME: I am broken!  setting gflags breaks with concurrent requests.
-        // It also changes default values.  Shouldn't use gflags::FlagSaver
-        // to save and restore state because that adds brokenness to brokenness.
-        // There needs to be a way to override gflag values so that a concurrent
-        // request has it's own separate state. Same with PerformanceTestHandler
 
-        auto result = trySetFlags({"hello_host", "hello_port"});
+        auto params = getTestParams(body());
 
-        if (result.hasError()) {
-            auto msg = fmt::format("error parsing json: {}", result.error());
+        if (params.hasError()) {
+            auto msg = fmt::format("error parsing json: {}", params.error());
             sendResponse(400, "Bad Request", msg);
         }
         else {
-            ft_ = std::make_unique<FeatureTest>(*eb_);
-
+            ft_ = std::make_unique<FeatureTest>(*eb_,
+                                                params->host,
+                                                params->port);
             ft_->run()
                .thenValue([this](std::string&& result) {
                    nlohmann::json response;
@@ -148,6 +121,22 @@ public:
 
                    sendResponse(200, "OK", response.dump());
                });
+        }
+    }
+
+    using Expected = folly::Expected<FeatureTestParams, std::string>;
+
+    static Expected getTestParams(const std::string& json="{}") {
+
+        try {
+            FeatureTestParams p;
+
+            setFromConfig(TestHandler::config(json),
+                          "host", &p.host, "localhost",
+                          "port", &p.port, 8080);
+            return p;
+        } catch(const nlohmann::json::exception& e) {
+            return folly::makeUnexpected(e.what());
         }
     }
 };
@@ -161,19 +150,42 @@ public:
 
     void onEOM() noexcept override {
 
-        auto result = trySetFlags({"target_host", "target_port", "num_connections",
-                    "number_of_requests", "payload_size", "validate_content"});
+        auto params = getTestParams(body());
 
-        if (result.hasError()) {
-            auto msg = fmt::format("error parsing json: {}", result.error());
+        if (params.hasError()) {
+            auto msg = fmt::format("error parsing json: {}", params.error());
             sendResponse(400, "Bad Request", msg);
         }
         else {
-            performance_test(eb_)
-               .thenValue([this](std::vector<std::string>&& lines) {
+            // TODO: make this a handler member
+            auto test = std::make_shared<PerformanceTest>(eb_, params.value());
 
-                   sendResponse(200, "OK", folly::join("\n", lines));
-               });
+            // capture test to keep it alive
+            test->run()
+                .thenValue([this, test](std::vector<std::string>&& lines) {
+
+                    sendResponse(200, "OK", folly::join("\n", lines));
+                });
+        }
+    }
+
+    using Expected = folly::Expected<PerformanceTestParams, std::string>;
+
+    static Expected getTestParams(const std::string& json="{}") {
+
+        try {
+            PerformanceTestParams p;
+
+            setFromConfig(TestHandler::config(json),
+                "host", &p.target_host, "localhost",
+                "port", &p.target_port, 8080,
+                "num_connections",    &p.number_of_connections, 16,
+                "number_of_requests", &p.number_of_requests, 100,
+                "payload_size",       &p.payload_size, 2000);
+
+            return p;
+        } catch(const nlohmann::json::exception& e) {
+            return folly::makeUnexpected(e.what());
         }
     }
 };
@@ -185,30 +197,33 @@ public:
     UsageHandler(folly::EventBase* eb)
         : TestHandler(eb)
     {
-        usage_ = fmt::format(R"nacho(USAGE:
+        auto ftParams = FeatureTestHandler::getTestParams();
+        auto perfParams = PerformanceTestHandler::getTestParams();
+
+        usage_ = fmt::format(R"(USAGE:
+
+Request body is JSON (optional)
+
 POST /feature-test
-Request body is optional JSON
-- "hello_host" (string): default {}
-- "hello_port" (number): default {}
+- "host" (string): default {}
+- "port" (number): default {}
 
 POST /performance-test
-- "target_host" (string): default {}
-- "target_port" (number): default {}
+- "host" (string): default {}
+- "port" (number): default {}
 - "num_connections" (number): default {}
 - "number_of_requests" (number): default {}
 - "payload_size" (number): default {}
-- "validate_content" (number): default {}
 
 Examples:
 curl -X POST http://localhost:8000/feature-test
-curl -X POST -d '{{"hello_host":"10.138.1.207"}}' http://localhost:8000/feature-test
-)nacho",
-        defaultFlagValue("hello_host"), defaultFlagValue("hello_port"),
+curl -X POST -d '{{"host":"10.138.1.207"}}' http://localhost:8000/feature-test
+)",
+        ftParams->host, ftParams->port,
 
-        defaultFlagValue("target_host"), defaultFlagValue("target_port"),
-        defaultFlagValue("num_connections"), defaultFlagValue("number_of_requests"),
-        defaultFlagValue("payload_size"), defaultFlagValue("validate_content")
-        );
+        perfParams->target_host, perfParams->target_port,
+        perfParams->number_of_connections, perfParams->number_of_requests,
+        perfParams->payload_size);
     }
 
     void onEOM() noexcept override {
@@ -264,14 +279,14 @@ int main(int argc, char* argv[]) {
 
     constexpr auto allowNameLookup = true;
     constexpr auto HTTP = proxygen::HTTPServer::Protocol::HTTP;
-    constexpr uint16_t httpPort = 8000;
+    const uint16_t httpPort = FLAGS_test_server_port;
     server.bind({
         {folly::SocketAddress{"0.0.0.0", httpPort, allowNameLookup}, HTTP},
     });
 
-    LOG(INFO) << "Starting HTTP test server on port " << httpPort;
+    LOG(INFO) << "Starting HTTP hello test server on port " << httpPort;
     server.start();
-    LOG(INFO) << "HTTP server exited";
+    LOG(INFO) << "hellotest server exited";
 
     return 0;
 }
