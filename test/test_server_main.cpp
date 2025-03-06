@@ -143,6 +143,7 @@ public:
 
 
 class PerformanceTestHandler: public TestHandler {
+    std::unique_ptr<PerformanceTest> pt_;
 public:
     PerformanceTestHandler(folly::EventBase* eb)
         : TestHandler{eb}
@@ -157,12 +158,10 @@ public:
             sendResponse(400, "Bad Request", msg);
         }
         else {
-            // TODO: make this a handler member
-            auto test = std::make_shared<PerformanceTest>(eb_, params.value());
+            pt_ = std::make_unique<PerformanceTest>(eb_, params.value());
 
-            // capture test to keep it alive
-            test->run()
-                .thenValue([this, test](std::vector<std::string>&& lines) {
+            pt_->run()
+                .thenValue([this](std::vector<std::string>&& lines) {
 
                     sendResponse(200, "OK", folly::join("\n", lines));
                 });
@@ -217,7 +216,7 @@ POST /performance-test
 
 Examples:
 curl -X POST http://localhost:8000/feature-test
-curl -X POST -d '{{"host":"10.138.1.207"}}' http://localhost:8000/feature-test
+curl -d '{{"host":"127.0.0.1"}}' http://localhost:8000/feature-test
 )",
         ftParams->host, ftParams->port,
 
