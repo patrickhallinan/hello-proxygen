@@ -6,7 +6,7 @@ endif::[]
 
 This uses the `HttpClient` to feature test `hello` HTTP server.  The server returns "Hello" on a GET request and on a POST request echoes the posted content.
 
-The test is implemented in `feature_test.cpp`
+The test is in `test/feature_test.cpp`
 
 == usage
 
