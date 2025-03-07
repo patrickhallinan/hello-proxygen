@@ -6,9 +6,9 @@ endif::[]
 
 This uses the `HttpClient` to feature tests `hello` HTTP server.  The server returns "Hello" on a GET request and on a POST request echoes the posted content.
 
-== example
+The test is implemented in `feature_test.cpp`
 
-The test works but the FeatureTest class is kind of useless.  A mental placeholder.
+== example
 
 [options="header", cols="5,3"]
 |===
@@ -104,7 +104,7 @@ main -> EventBase : eb=ctor{}
 
 main -> test : ctor{ eb, timer }
 
-test -> HttpClient : ctor{\n  EventBase,\n  defaultTimeout,\n  url,\n  headers }
+test -> HttpClient : ctor{ EventBase, defaultTimeout, headers }
 
 HttpClient -> HTTPConnector : ctor{ this, timer }
 
@@ -145,7 +145,7 @@ participant "**HTTPConnector**" as HTTPConnector
 
 
 EventBase -> test : callback()
-test -> HttpClient : connect()
+test -> HttpClient : connect( host, port )
 
 HttpClient -> HTTPConnector : connect( EventBase, socketAddress, timeout, SocketOptionMap )
 HttpClient -> Promise : ctor{}
@@ -160,10 +160,10 @@ HttpClient -> Promise : setValue()
 == .thenValue() ==
 
 EventBase -> test : callback()
-test -> HttpClient : GET()
+test -> HttpClient : GET("/")
 HttpClient -> TransactionHandler : txnHandler=ctor{ this }
 HttpClient -> HTTPUpstreamSession : newTransaction( txnHandler )
-HttpClient -> HttpClient : http_message=createHttpMessage( GET )
+HttpClient -> HttpClient : http_message=createHttpMessage( HTTPMethod::GET )
 HttpClient -> HTTPTransaction : sendHeaders( http_message )
 HttpClient -> HTTPTransaction : sendEOM()
 
@@ -195,10 +195,10 @@ HTTPTransaction -> TransactionHandler : detachTransaction()
 
 EventBase -> test : callback( HttpResponse )
 
-test -> HttpClient : POST( "Echo" )
+test -> HttpClient : POST( "/", "Echo" )
 HttpClient -> TransactionHandler : txnHandler=ctor{ this }
 HttpClient -> HTTPUpstreamSession : newTransaction( txnHandler )
-HttpClient -> HttpClient : http_message=createHttpMessage( GET )
+HttpClient -> HttpClient : http_message=createHttpMessage( HTTPMethod::POST )
 HttpClient -> HTTPTransaction : sendHeaders( http_message )
 HttpClient -> HTTPTransaction : sendBody( content )
 HttpClient -> HTTPTransaction : sendEOM()

@@ -32,7 +32,7 @@ folly::Future<std::string> FeatureTest::run() {
                           .thenValue([this](folly::Unit) {
                               LOG(INFO) << "Connected!";
 
-                              return httpClient_->GET("/feature-test");
+                              return httpClient_->GET("/");
                           })
                           .thenValue([this](const HttpResponse& response) {
                               LOG(INFO) << "Status: " << response.status()
@@ -41,7 +41,7 @@ folly::Future<std::string> FeatureTest::run() {
                               assert_equal(response.status(), 200);
                               assert_equal(response.content(), "Hello");
 
-                              return httpClient_->POST("/feature-test", "Echo");
+                              return httpClient_->POST("/", "Echo");
                           })
                           .thenValue([this](const HttpResponse& response) {
                               LOG(INFO) << "Status: " << response.status()
@@ -49,7 +49,7 @@ folly::Future<std::string> FeatureTest::run() {
 
                               assert_equal(response.content(), "Echo");
 
-                              return httpClient_->POST("/feature-test","");
+                              return httpClient_->POST("/","");
                           })
                           .thenValue([](const HttpResponse& response) {
                               LOG(INFO) << "Status: " << response.status()

@@ -23,6 +23,7 @@ Tested on macOS Sonoma (14.7.1), ubuntu 24.04 (on Windows 11 in a VM and in WSL)
 git clone --recurse-submodules  git@github.com:patrickhallinan/hello-proxygen
 ```
 
+
 ## install dependencies
 
 ### mac
@@ -140,7 +141,7 @@ curl -X POST -d "echo" http://localhost:8080
 
 ### test server
 
-This was created to simplify automated testing.  It is relatively new
+Created to simplify automated testing.
 
 #### run the server
 
@@ -170,12 +171,12 @@ curl -X POST http://localhost:8000/feature-test
 OR
 
 ```
-curl -d '{"host":"localhost", "port":8765}' http://localhost:8000/feature-test
+curl -d '{"host":"127.0.0.1", "port":8080}' http://localhost:8000/feature-test
 ```
 
 
 #### performance test
 
 ```
-curl -X POST http://localhost:8000/feature-test
+curl -X POST http://localhost:8000/performance-test
 ```

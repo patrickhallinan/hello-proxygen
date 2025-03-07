@@ -4,10 +4,8 @@ endif::[]
 
 = http-client
 
-This is a proof of concept.  Not a mature implementation.
+This is a proof of concept.
 
-
-== how should it work?
 
 [source, c++]
 ----
@@ -35,22 +33,6 @@ void main() {
     // blocks
     eventBase.loop()
 }
-----
-
-
-== how does it work?
-
-[source, c++]
-----
-    // ...
-    HttpClient httpClient(&eventBase, defaultTimeout, httpHeaders, url);
-
-    eventBase.runInEventBaseThread([&]() {
-
-        httpClient.connect()
-                  .thenValue([&]( Unit ) {
-                      return httpClient.POST("content");
-    // ...
 ----
 
 
@@ -85,7 +67,7 @@ participant "**HTTPConnector**\n\n" as HTTPConnector
 main -> Init : ctor{ &argc, &argv }
 main -> EventBase : eb=ctor{}
 
-main -> HttpClient : ctor{ EventBase, defaultTimeout, url, headers }
+main -> HttpClient : ctor{ EventBase, defaultTimeout, headers }
 
 HttpClient -> WheelTimerInstance : timer=ctor{ defaultTimeout, EventBase }
 note right #ff8888
@@ -129,7 +111,7 @@ participant "**HTTPUpstreamSession**\n\n" as HTTPUpstreamSession
 
 
 
--> HttpClient : connect()
+-> HttpClient : connect( host, port )
 
 HttpClient -> SocketAddress : addr=ctor{ Host, Port, allowNameLookup=true }
 HttpClient -> HTTPConnector : connect( &eb, addr, connect_timeout, socket_options )
