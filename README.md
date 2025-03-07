@@ -143,6 +143,8 @@ curl -X POST -d "echo" http://localhost:8080
 
 Created to simplify automated testing.
 
+**TODO**: Implement automated testing
+
 #### run the server
 
 ```bash
