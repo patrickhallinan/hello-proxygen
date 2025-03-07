@@ -53,7 +53,7 @@ docker tag hello:latest localhost:32000/hello:latest
 
 === push to registry:
 
-NOTE: microk8s registry supports mutable tags but MUST re-tag new images with `registry:port` prefix
+NOTE: microk8s registry supports mutable tags but MUST re-tag new images with `registry:port` prefix.  Alternatively, images can be built with the prefix.
 
 ```
 docker push localhost:32000/hello:latest
