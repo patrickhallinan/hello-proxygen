@@ -17,13 +17,15 @@ DEFINE_bool(log_connect_time, false, "Log number of milliseconds to connect to e
 DEFINE_int32(connect_timeout, 500, "HttpClient connect Timout in milliseconds");
 
 
+namespace {
+}
+
+
 HttpClient::HttpClient(EventBase* eb,
                        std::chrono::milliseconds defaultTimeout,
-                       const HTTPHeaders& headers,
-                       const std::string& url)
+                       const HTTPHeaders& headers)
     : eb_{eb}
-    , headers_{headers}
-    , url_{proxygen::URL{url}} {
+    , headers_{headers} {
 
     // uses HHWheelTimer from EventBase
     proxygen::WheelTimerInstance timer{defaultTimeout, eb};
@@ -32,10 +34,12 @@ HttpClient::HttpClient(EventBase* eb,
 }
 
 
-folly::Future<folly::Unit> HttpClient::connect() {
+folly::Future<folly::Unit> HttpClient::connect(const std::string& host,
+                                               const uint16_t port) {
+
     connectStartTime_ = std::chrono::high_resolution_clock::now();
 
-    folly::SocketAddress socketAddress{url_.getHost(), url_.getPort(), /*allowNameLookup*/true};
+    folly::SocketAddress socketAddress{host, port, /*allowNameLookup*/true};
 
     static const folly::SocketOptionMap socketOptions{{{SOL_SOCKET, SO_REUSEADDR}, 1}};
 
@@ -51,27 +55,39 @@ folly::Future<folly::Unit> HttpClient::connect() {
                             socketAddress,
                             std::chrono::milliseconds(FLAGS_connect_timeout),
                             socketOptions);
+    host_ = host;
+    port_ = port;
 
     return connectPromise_->getFuture();
 }
 
 
-folly::Future<HttpResponse> HttpClient::GET() {
+folly::Future<HttpResponse> HttpClient::GET(const std::string& path) {
+
     auto transactionHandler = new TransactionHandler{};
     auto txn = session_->newTransaction(transactionHandler);
 
-    txn->sendHeaders(createHttpMessage(proxygen::HTTPMethod::GET));
+    auto httpMessage = createHttpMessage(proxygen::HTTPMethod::GET,
+                                         path);
+
+    txn->sendHeaders(std::move(httpMessage));
     txn->sendEOM();
 
     return transactionHandler->getFuture();
 }
 
 
-folly::Future<HttpResponse> HttpClient::POST(const std::string& content) {
+folly::Future<HttpResponse> HttpClient::POST(const std::string& path,
+                                             const std::string& content) {
+
     auto transactionHandler = new TransactionHandler{};
     auto txn = session_->newTransaction(transactionHandler);
 
-    txn->sendHeaders(createHttpMessage(proxygen::HTTPMethod::POST, content.size()));
+    auto httpMessage = createHttpMessage(proxygen::HTTPMethod::POST,
+                                         path,
+                                         content.size());
+
+    txn->sendHeaders(std::move(httpMessage));
     txn->sendBody(folly::IOBuf::copyBuffer(content));
     txn->sendEOM();
 
@@ -80,13 +96,17 @@ folly::Future<HttpResponse> HttpClient::POST(const std::string& content) {
 
 
 proxygen::HTTPMessage HttpClient::createHttpMessage(proxygen::HTTPMethod method,
+                                                    const std::string& path,
                                                     size_t contentLength) {
     proxygen::HTTPMessage httpMessage;
 
+
+
+    // example:  GET /path HTTP/1.1
     httpMessage.setMethod(method);
+    httpMessage.setURL(path);
     httpMessage.setHTTPVersion(1, 1);
-    httpMessage.setURL(url_.makeRelativeURL());
-    httpMessage.setSecure(url_.isSecure());
+    httpMessage.setSecure(false);
 
     headers_.forEach([&httpMessage](const string& header, const string& val) {
         httpMessage.getHeaders().add(header, val);
@@ -97,7 +117,8 @@ proxygen::HTTPMessage HttpClient::createHttpMessage(proxygen::HTTPMethod method,
     }
 
     if (! httpMessage.getHeaders().getNumberOfValues(HTTP_HEADER_HOST)) {
-        httpMessage.getHeaders().add(HTTP_HEADER_HOST, url_.getHostAndPort());
+		const auto endpoint = fmt::format("{}:{}", host_, port_);
+        httpMessage.getHeaders().add(HTTP_HEADER_HOST, endpoint);
     }
 
     if (! httpMessage.getHeaders().getNumberOfValues(HTTP_HEADER_ACCEPT)) {
@@ -121,9 +142,9 @@ void HttpClient::connectSuccess(HTTPUpstreamSession* session) {
             << connectTime.count() << " milliseconds";
     }
 
-    if (url_.isSecure()) {
+    //if (isSecure_) {
         // TODO: sslHandshakeFollowup(session);
-    }
+    //}
 
     session_ = session;
 
@@ -135,7 +156,7 @@ void HttpClient::connectSuccess(HTTPUpstreamSession* session) {
 
 
 void HttpClient::connectError(const folly::AsyncSocketException& e) {
-    LOG(ERROR) << "Failed to connect to " << url_.getHostAndPort();
+    LOG(ERROR) << "Failed to connect to " << host_ << ":" << port_;
     connectPromise_->setException(e);
 }
 

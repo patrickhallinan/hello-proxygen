@@ -10,15 +10,23 @@ class EventBase;
 }
 
 
-class Test {
+class FeatureTest {
 public:
-    Test(folly::EventBase& eventBase);
+    FeatureTest(folly::EventBase& eventBase,
+                const std::string& host,
+                uint16_t port);
 
-    void run();
+    folly::Future<std::string> run();
 
 private:
     folly::EventBase& eventBase_;
+    std::string host_;
+    uint16_t port_;
+
+    folly::Promise<std::string> completed_;
     std::unique_ptr<HttpClient> httpClient_;
+    std::string failMsg_;
+    bool passed_{true};
 };
 
 
@@ -29,3 +37,4 @@ private:
         throw std::runtime_error(msg); \
     } \
 }
+

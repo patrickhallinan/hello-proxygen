@@ -40,7 +40,7 @@ echo_request_lag: milliseconds to wait before sending response (default=0)
 ==== localhost
 
 ```bash
-test/performance --number_of_requests=100 --num_connections=10
+test/perf --number_of_requests=100 --num_connections=10
 ```
 
 ==== remote host
@@ -48,7 +48,7 @@ test/performance --number_of_requests=100 --num_connections=10
 NOTE: Ensure the firewall is open.  Can be verified with: `telnet <ip> <port>`
 
 ```bash
-test/performance --target_host=192.168.1.107 --target_port=8080 \
+test/perf --target_host=192.168.1.107 --target_port=8080 \
   --num_connections=500 --number_of_requests=1000 --payload_size=100 \
   --connect_timeout=5000
 ```

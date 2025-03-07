@@ -41,7 +41,7 @@ void run() {
         {folly::SocketAddress{"0.0.0.0", httpPort, allowNameLookup}, HTTP},
     });
 
-    LOG(INFO) << "Starting HTTP server on port " << httpPort;
+    LOG(INFO) << "Starting HTTP hello server on port " << httpPort;
     server.start();
     LOG(INFO) << "HTTP server exited";
 }

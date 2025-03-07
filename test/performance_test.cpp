@@ -1,59 +1,26 @@
-#include "Test.h"
+#include "performance_test.h"
 
 #include "HttpClient.h"
 
+#include <fmt/format.h>
 #include <folly/futures/ThreadWheelTimekeeper.h>
-#include <folly/init/Init.h>
 #include <folly/io/async/EventBase.h>
 #include <gflags/gflags.h>
 
-#include <atomic>
 #include <chrono>
-#include <cstdlib>
 #include <random>
+#include <stdexcept>
+#include <string_view>
 
 
-DEFINE_string(target_host, "127.0.0.1", "IP address");
-DEFINE_int32(target_port, 8080, "HTTP port");
-
-DEFINE_int32(num_connections, 16, "should be a power of 2");
-DEFINE_int32(number_of_requests, 100, "number of http requests");
-DEFINE_int32(payload_size, 2000, "number of bytes to send in each request");
-DEFINE_bool(validate_content, false, "verify response content equals request content");
-
-
-void performance_test(folly::EventBase*);
-
-
-// We really only need atomic<> if was have multiple event bases (i.e. threads)
-std::atomic<int> requestCount(0);
-
-
-int main(int argc, char* argv[]) {
-    FLAGS_logtostderr = true;
-    FLAGS_minloglevel = 0;
-
-    folly::Init _{&argc, &argv, /*removeFlags=*/false};
-
-    folly::EventBase eventBase;
-
-    performance_test(&eventBase);
-
-    // test does not run until eventBase.loop()
-    eventBase.loop();
-
-    LOG(INFO) << "Exit main()\n";
-
-    return 0;
-}
+namespace {
 
 
 proxygen::HTTPHeaders httpHeaders() {
     proxygen::HTTPHeaders headers;
 
-    auto host = fmt::format("{}:{}", FLAGS_target_host, FLAGS_target_port);
-    headers.add(proxygen::HTTP_HEADER_HOST, host);
-    headers.add(proxygen::HTTP_HEADER_USER_AGENT, "test-client");
+    headers.add(proxygen::HTTP_HEADER_USER_AGENT, "performance-test");
+    headers.add(proxygen::HTTP_HEADER_CACHE_CONTROL, "no-store");
     headers.add(proxygen::HTTP_HEADER_ACCEPT, "*/*");
 
     return headers;
@@ -76,171 +43,180 @@ std::string makePayload(int size) {
     return payload;
 }
 
+} // end namespace anon
 
-folly::Future<HttpClient*> send(HttpClient* client, std::string& payload) {
 
-    return client->POST(payload)
-        .thenValue([client, &payload](const HttpResponse& response) {
+folly::Future<HttpClient*> PerformanceTest::send(HttpClient* client) {
 
-            if (response.status() != 200)
-                LOG(FATAL) << "received invalid status code from host" << response.status();
+    if (++requestCount > number_of_requests)
+        return folly::makeFuture(client);
 
-            if (FLAGS_validate_content && response.content() != payload)
-                LOG(FATAL) << "invalid response from host. expected size=" << payload.size()
-                           << ", actual size=" << response.content().size()
-                           << ", content: " << std::endl
-                           << response.content() << std::endl;
+    return client->POST("/feature-test", payload_)
+        .thenValue([this, client](const HttpResponse& response) {
 
-            if (requestCount++ < FLAGS_number_of_requests) {
-                return send(client, payload);
+            if (response.status() != 200) {
+                auto msg = fmt::format("received invalid status code from host: {}",
+                        response.status());
+                throw std::runtime_error(msg);
             }
 
-            return folly::makeFuture(client);
+            else if (response.content() != payload_) {
+                auto truncate = [](std::string_view s, size_t N) {
+                    return s.substr(0, std::min(s.length(), N));
+                };
+
+                auto msg = fmt::format("invalid response from host. expected size={} "
+                        ", actual size={}, content:\n{}", payload_.size(),
+                        response.content().size(), truncate(response.content(), 200));
+
+                throw std::runtime_error(msg);
+            }
+
+            return send(client);
         });
 }
 
 
-folly::Future<folly::Unit> sendRequests(folly::EventBase* eventBase,
-                                        std::vector<HttpClient*> clients,
-                                        std::string& payload) {
+// This is an artifact of earlier developement and may not make sense
+// as a separate function (may have never made sense).
+folly::Future<folly::Unit> PerformanceTest::sendRequests() {
 
     std::vector<folly::Future<HttpClient*>> clientFutures;
 
-    for (auto* client : clients) {
-    	// note: send() does not block
-        clientFutures.push_back(send(client, payload));
+    for (auto* client : clients_) {
+        // send() is poorly named.  each client will continually send/receive
+        // a payload until the number_of_requests limit is reached.
+        clientFutures.push_back(send(client));
     }
 
     return folly::collectAll(std::move(clientFutures))
-        .via(eventBase)
+        .via(eventBase_)
         .thenValue([](folly::SemiFuture<std::vector<folly::Try<HttpClient *>>>) {
             return folly::unit;
         });
 }
 
 
-
 // Originally client->connect() was called on all the clients and folly::collectAll()
-// was used to wait for them all to connect but occassionally client->connect() fails
+// was used to wait for them all to connect but occassionally client->connect() failed
 // with a timeout exception.  This work's around the issue by connecting clients one
 // by one and doing retries when an exception occurs.
 //
-// This could be done in batches using folly::collectAll where connection failures
-// would got into the next batch.
+// This could be done faster by connecting in batches and retrying connection failures
+// in subsequent batches
 //
-folly::Future<folly::Unit> connect(folly::EventBase* eventBase,
-                                   std::vector<HttpClient*> clients,
-                                   int index=0) {
+folly::Future<folly::Unit> PerformanceTest::connect(int index, int retries) {
 
-    // FIXME: Make connect() thread safe.
-    static int retries;
-    constexpr int max_retries = 200;
+    // TODO: Make retries a test parameter
+    static constexpr int max_retries = 200;
 
-    if (index == 0)
-        retries = 0;
+    if (retries >= max_retries) {
+        auto msg = fmt::format("Connect to '{}:{}' failed  Exceeded max retries: {}",
+            target_host, target_port, max_retries);
+        throw std::runtime_error{msg};
+    }
 
-    if (index >= clients.size())
+    if (index >= clients_.size())
         return folly::unit;
 
-    HttpClient* client = clients[index];
+    HttpClient* client = clients_[index];
 
-    return client->connect()
-        .thenValue([eventBase, clients, index](folly::Unit) mutable {
-            return connect(eventBase, std::move(clients), index+1);
+    return client->connect(target_host, target_port)
+        .thenValue([this, index, retries](folly::Unit) {
+            return connect(index+1, retries);
         })
         .thenError(folly::tag_t<std::exception>{},
-            [eventBase, clients=std::move(clients), index](const std::exception& e) mutable {
+            [this, index, retries](const std::exception& e) mutable {
 
-            if (retries++ >= max_retries) {
-                LOG(ERROR) << "Connect failed.  Exceeded max connect() retries: " << max_retries
-                    << ", exception: " << e.what();
-                exit(1);
-            }
+            LOG(ERROR) << e.what();
 
-            LOG(ERROR) << "Connect failed.  Retrying.  exception: " << e.what();
-
-            return connect(eventBase, std::move(clients), index);
+            return connect(index, retries+1);
         });
 }
 
 
-folly::Future< std::vector<HttpClient*> > getClients(folly::EventBase* eventBase, int count) {
+folly::Future<folly::Unit> PerformanceTest::connectClients() {
+
     using namespace std::chrono_literals;
 
-    std::vector<HttpClient*> clients;
+    auto endpoint = fmt::format("{}:{}", target_host, target_port);
 
-    auto url = fmt::format("http://{}:{}/", FLAGS_target_host, FLAGS_target_port);
-
-    LOG(INFO) << "Connecting to: " << url;
-
-    for (int i = 0 ; i < count ; i++)
-        clients.push_back(new HttpClient(eventBase, 5s, httpHeaders(), url));
+    LOG(INFO) << "Connecting to: " << endpoint;
 
     auto start = std::chrono::high_resolution_clock::now();
 
-    // TODO: Change connect() to return Future<vector<HttpClient*> and stop capturing clients
-    return connect(eventBase, clients)
-        .thenValue([eventBase, clients, start] (folly::Unit) mutable {
+    return connect()
+        .thenValue([this, start] (folly::Unit) {
             auto end = std::chrono::high_resolution_clock::now();
 
             std::chrono::duration<double> elapsed = end - start;
 
-            LOG(INFO) << "Connected " << clients.size() << " HttpClient's in "
+            LOG(INFO) << "Connected " << clients_.size() << " HttpClient's in "
                 << elapsed.count() << " seconds";
 
-            return std::move(clients);
+            return folly::unit;
         });
 }
 
 
-void print_results(double total_time_ms) {
+std::vector<std::string> PerformanceTest::results(double total_time_ms) {
+
     double seconds = total_time_ms / 1000.0;
-    double averageRequestTime = total_time_ms / FLAGS_number_of_requests;
-    double requestRate = FLAGS_number_of_requests / seconds;
-    double mbps = requestRate * 8 * FLAGS_payload_size / (1024*10240);
+    double averageRequestTime = total_time_ms / number_of_requests;
+    double requestRate = number_of_requests / seconds;
+    double mbps = requestRate * 8 * payload_size / (1024*10240);
 
-    LOG(INFO) << "";
-    LOG(INFO) << "sent " << FLAGS_number_of_requests << " HTTP POST requests";
-    LOG(INFO) << "total time       : " << seconds << " seconds";
+    std::vector<std::string> lines;
 
-    LOG(INFO) << "content size     : " << FLAGS_payload_size << " bytes";
-    LOG(INFO) << "num connections  : " << FLAGS_num_connections << " connections";
+#define f fmt::format
 
-    LOG(INFO) << "avg request Time : " << averageRequestTime << " ms";
-    LOG(INFO) << "request rate     : " << requestRate << " requests/second";
-    LOG(INFO) << "bit rate         : " << mbps << " Mbps";
+    lines.push_back(f("sent {} HTTP POST requests", number_of_requests));
+    lines.push_back(f("total time: {} seconds", seconds));
+    lines.push_back(f("content size: {} bytes", payload_size));
+    lines.push_back(f("num connections: {} connections", number_of_connections));
+    lines.push_back(f("avg request Time: {} ms", averageRequestTime));
+    lines.push_back(f("request rate: {} requests/second", requestRate));
+    lines.push_back(f("bit rate: {} Mbps", mbps));
+
+#undef f
+
+    return lines;
 }
 
 
-void performance_test(folly::EventBase* eventBase) {
+folly::Future<std::vector<std::string>> PerformanceTest::run() {
 
-    static std::chrono::time_point<std::chrono::high_resolution_clock> start;
+    using namespace std;
+    using namespace folly;
 
-    getClients(eventBase, FLAGS_num_connections)
-        .thenValue([eventBase](std::vector<HttpClient*> httpClients) {
+    auto promise = make_shared< Promise<vector<string>> >();
 
-            static std::string payload = makePayload(FLAGS_payload_size);
+    payload_ = makePayload(payload_size);
 
-            start = std::chrono::high_resolution_clock::now();
+    for (int i = 0 ; i < number_of_connections ; i++)
+        clients_.push_back(new HttpClient(eventBase_, 5s, httpHeaders()));
 
-            // XXX: maybe have sendRequests() return Future<vector<HttpClient*>>
-            return sendRequests(eventBase, httpClients, payload)
-                .thenValue([httpClients](folly::Unit) {
-                    return httpClients;
+    connectClients()
+        .thenValue([this, promise](folly::Unit) {
+
+            auto start = std::chrono::high_resolution_clock::now();
+
+            return sendRequests()
+
+                .thenValue([this, promise, start](folly::Unit) {
+
+                    auto end = std::chrono::high_resolution_clock::now();
+
+                    std::chrono::duration<double, milli> duration = end - start;
+
+                    auto lines = results(duration.count());
+
+                    promise->setValue(lines);
+
+                    for (auto& client : clients_)
+                        delete client;
                 });
-        })
-        .thenValue([](std::vector<HttpClient*> clients) {
-
-            auto end = std::chrono::high_resolution_clock::now();
-
-            std::chrono::duration<double, std::milli> duration = end - start;
-
-            print_results(duration.count());
-
-            for (auto& client : clients)
-                delete client;
-
-            // HACK: Figure out how to exit immediately after this ends and remove exit()
-            exit(0);
         });
+
+    return promise->getFuture();
 }

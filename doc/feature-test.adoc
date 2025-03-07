@@ -6,9 +6,25 @@ endif::[]
 
 This uses the `HttpClient` to feature test `hello` HTTP server.  The server returns "Hello" on a GET request and on a POST request echoes the posted content.
 
-== example
+The test is implemented in `feature_test.cpp`
 
-The test works but the Test class is kind of useless.  A mental placeholder.
+== usage
+
+From build directory.
+
+help:
+
+```
+test/ft --help
+```
+
+run:
+
+```
+test/ft
+```
+
+== example
 
 [options="header", cols="5,3"]
 |===
@@ -17,7 +33,7 @@ The test works but the Test class is kind of useless.  A mental placeholder.
 a|
 [source, c++]
 ----
-void Test::run() {
+void FeatureTest::run() {
   eventBase_.runInEventBaseThread([http=client_.get()]() {
     return http->connect()
       .thenValue([http](folly::Unit) {
@@ -37,7 +53,7 @@ void Test::run() {
 }
 
 a|
-* `Test::run()` puts a callback on the EventBase's queue. Later the event loop will dequeue and run the callback.
+* `FeatureTest::run()` puts a callback on the EventBase's queue. Later the event loop will dequeue and run the callback.
 * When the callback is run, `http->connect()` queues a callback to the `EventBase's` queue and returns a `Future`
 * `.thenValue()` continuations are called on each `Future` which register callbacks and return `Future's`
 * `.thenError()` is not shown but any exception would cause `.then()'s` to be skipped and `.thenError()` to be called.
@@ -93,7 +109,7 @@ hide footbox
 
 participant "**main()**" as main  #LightGreen
 participant "**folly::Init**" as Init
-participant "**Test**" as test  #LightGreen
+participant "**FeatureTest**" as test  #LightGreen
 participant "**EventBase**" as EventBase
 participant "**HttpClient**" as HttpClient  #LightGreen
 participant "**HTTPConnector**" as HTTPConnector
@@ -104,7 +120,7 @@ main -> EventBase : eb=ctor{}
 
 main -> test : ctor{ eb, timer }
 
-test -> HttpClient : ctor{\n  EventBase,\n  defaultTimeout,\n  url,\n  headers }
+test -> HttpClient : ctor{ EventBase, defaultTimeout, headers }
 
 HttpClient -> HTTPConnector : ctor{ this, timer }
 
@@ -137,7 +153,7 @@ hide footbox
 participant "**EventBase**" as EventBase
 participant "**HttpClient**" as HttpClient  #LightGreen
 participant "**Promise**" as Promise
-participant "**Test**" as test  #LightGreen
+participant "**FeatureTest**" as test  #LightGreen
 participant "**TransactionHandler**" as TransactionHandler  #LightGreen
 participant "**HTTPUpstreamSession**" as HTTPUpstreamSession
 participant "**HTTPTransaction**" as HTTPTransaction
@@ -145,7 +161,7 @@ participant "**HTTPConnector**" as HTTPConnector
 
 
 EventBase -> test : callback()
-test -> HttpClient : connect()
+test -> HttpClient : connect( host, port )
 
 HttpClient -> HTTPConnector : connect( EventBase, socketAddress, timeout, SocketOptionMap )
 HttpClient -> Promise : ctor{}
@@ -160,10 +176,10 @@ HttpClient -> Promise : setValue()
 == .thenValue() ==
 
 EventBase -> test : callback()
-test -> HttpClient : GET()
+test -> HttpClient : GET("/")
 HttpClient -> TransactionHandler : txnHandler=ctor{ this }
 HttpClient -> HTTPUpstreamSession : newTransaction( txnHandler )
-HttpClient -> HttpClient : http_message=createHttpMessage( GET )
+HttpClient -> HttpClient : http_message=createHttpMessage( HTTPMethod::GET )
 HttpClient -> HTTPTransaction : sendHeaders( http_message )
 HttpClient -> HTTPTransaction : sendEOM()
 
@@ -195,10 +211,10 @@ HTTPTransaction -> TransactionHandler : detachTransaction()
 
 EventBase -> test : callback( HttpResponse )
 
-test -> HttpClient : POST( "Echo" )
+test -> HttpClient : POST( "/", "Echo" )
 HttpClient -> TransactionHandler : txnHandler=ctor{ this }
 HttpClient -> HTTPUpstreamSession : newTransaction( txnHandler )
-HttpClient -> HttpClient : http_message=createHttpMessage( GET )
+HttpClient -> HttpClient : http_message=createHttpMessage( HTTPMethod::POST )
 HttpClient -> HTTPTransaction : sendHeaders( http_message )
 HttpClient -> HTTPTransaction : sendBody( content )
 HttpClient -> HTTPTransaction : sendEOM()

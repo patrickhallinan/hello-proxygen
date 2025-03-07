@@ -1,0 +1,15 @@
+= hello
+
+TODO:  Flesh this out!
+
+An HTTP server which returns "hello" for any GET request and echoes back the content in a POST request.  It ignores the path in the request.
+
+==
+
+Archimate startup sequence?
+
+[plantuml, "hello-init.puml", svg]
+----
+
+
+----

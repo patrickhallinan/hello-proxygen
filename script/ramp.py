@@ -12,7 +12,7 @@ def run_performance_command(host, port, number_of_requests, payload_size, num_co
     payload_size_param    = f"--payload_size={payload_size}"
 
     command = [
-        "test/performance",
+        "test/perf",
         host_param,
         port_param,
         num_connections_param,

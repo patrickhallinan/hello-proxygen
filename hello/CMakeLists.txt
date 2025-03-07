@@ -22,20 +22,20 @@ set(TARGET_LIBRARIES
     ${SODIUM_LDFLAGS}
 
     dl
-    ${LIBEVENT_LIBRARIES}
     pthread
     fmt
-    glog
     gflags
-    lzma
+    glog
     ${SNAPPY_LIB}
     OpenSSL::SSL
+    lzma
     OpenSSL::Crypto
 
     PkgConfig::lz4
 
     z
     zstd
+    ${LIBEVENT_LIBRARIES}
     double-conversion::double-conversion
 
     Boost::context
