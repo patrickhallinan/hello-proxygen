@@ -222,6 +222,4 @@ It's important to test with a payload that is representative of actual payloads.
 
 ==== response validation
 
-An overloaded server can do unexpected things.  Like short circuit its normal processing and send back a warning message.  I forget which tool was used but I was involved in testing where this exact thing happened and we had very misleading request rate numbers.
-
-The `--validate_content` flag ensures that the server is echoing back the payload correctly and aborts if there is a mismatch.
+An overloaded server can do unexpected things.  Like short circuit its normal processing and send back a warning message.  I forget which tool was used but I was involved in testing where this exact thing happened and we had very misleading request rate numbers.  The performance test verifies the content echoed back.
