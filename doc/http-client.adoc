@@ -23,7 +23,7 @@ void main() {
                   .thenValue([]( HttpResponse response ) {
                       // ...
                   })
-                  .thenError([]( const std::exception& e ) {
+                  .thenError([]( folly::tag_t<std::exception>{}, const std::exception& e ) {
                       // ...
                   });
     });
