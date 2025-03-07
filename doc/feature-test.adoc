@@ -35,15 +35,15 @@ a|
 ----
 void FeatureTest::run() {
   eventBase_.runInEventBaseThread([http=client_.get()]() {
-    return http->connect()
+    return http->connect(host, port)
       .thenValue([http](folly::Unit) {
-          return http->GET();
+          return http->GET("/");
       })
       .thenValue([http](const HttpResponse& response) {
           assert_equal(response.status(), 200);
           assert_equal(response.content(), "Hello");
 
-          return http->POST("Echo");
+          return http->POST("/", "Echo");
       })
       .thenValue([](const HttpResponse& response) {
           assert_equal(response.status(), 200);
