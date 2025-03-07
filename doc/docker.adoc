@@ -24,7 +24,7 @@ newgrp docker
 
 == create docker images
 
-NOTE: Failed to build proxygen in docker on ancient hardware.
+NOTE: Failed to build proxygen in docker on old hardware.
 
 === docker build
 
