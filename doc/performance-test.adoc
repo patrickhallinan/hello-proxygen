@@ -210,11 +210,11 @@ image::request-rate-vs-connection-count.png[]
 
 ==== number of requests
 
-There can be startup costs that impacts performance numbers.  This has been observed when testing against remote servers.  Sending 1 request can be a comparable amount of time as sending 100 or even 1000 requests.  This cost can be minimized by a have a sufficient number of requests.  For example, a 5 second cost with 1 request adds five seconds to the average request time but with 1000 requests it adds 1 millisecond to the average.
+There can be startup costs that impacts performance numbers.  This is more of a factor when testing against remote servers than local loopback.  Sending 1 request can be a comparable amount of time as sending 100 or even 1000 requests.  This cost is minimized by having a sufficient number of requests.  For example, a 5 second startup cost with 1 request adds five seconds to the average request time but with 1000 requests it adds 5 millisecond to the average.
 
 This could be further mitigated by changing the code to send some initial requests that are not part of the metrics.
 
-It would also be a good idea to measure the individual request times to get an idea of distribution.
+It would also be a good idea to measure the individual request times to get an idea of request time distribution.
 
 ==== payload size
 
