@@ -4,8 +4,6 @@ endif::[]
 
 = http-client
 
-This is a proof of concept.
-
 
 [source, c++]
 ----
@@ -143,7 +141,7 @@ HttpClient -> Promise : setException( AsyncSocketException )
 endif::[]
 
 
-=== http post
+=== POST
 
 
 // for github
@@ -170,7 +168,7 @@ participant "**HTTPTransaction**" as HTTPTransaction
 
 == POST ==
 
--> HttpClient : POST( "content" )
+-> HttpClient : POST( "/path", "content" )
 
 HttpClient -> TransactionHandler : transactionHandler=ctor{ this }
 HttpClient -> HTTPUpstreamSession : txn=newTransaction( transactionHandler )

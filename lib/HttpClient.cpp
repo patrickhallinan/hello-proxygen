@@ -55,7 +55,6 @@ folly::Future<folly::Unit> HttpClient::connect(const std::string& host,
                             socketAddress,
                             std::chrono::milliseconds(FLAGS_connect_timeout),
                             socketOptions);
-
     host_ = host;
     port_ = port;
 

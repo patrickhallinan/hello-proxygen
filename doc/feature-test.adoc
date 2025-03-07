@@ -8,6 +8,22 @@ This uses the `HttpClient` to feature tests `hello` HTTP server.  The server ret
 
 The test is implemented in `feature_test.cpp`
 
+== usage
+
+From build directory.
+
+help:
+
+```
+test/ft --help
+```
+
+run:
+
+```
+test/ft
+```
+
 == example
 
 [options="header", cols="5,3"]
