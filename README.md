@@ -69,7 +69,7 @@ If memory is low and cannot be increased the number of jobs can be reduced like 
 
 It built fine on a chromebook having 8 GB of memory with the number of jobs set to 1.
 
-### for rtags support on ubuntu (others not tested)
+### for rtags support on ubuntu
 
 In order to use `rtags` on `proxygen` itself you must build with `clang` and generate `compile_commands.json`.
 
