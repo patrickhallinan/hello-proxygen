@@ -79,7 +79,6 @@ num_connections - number of HttpClients to use for load testing
 number_of_requests - number of requests
 payload_size - number of bytes to send in the body of each request
 connect_timeout - number of milliseconds to wait for an HttpClient to connect
-validate_content - verify response content equals request content
 ```
 
 === ramp script
