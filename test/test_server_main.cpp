@@ -49,8 +49,7 @@ public:
 
     //void onEOM() noexcept override {}
 
-    void onUpgrade(UpgradeProtocol protocol) noexcept override {
-    }
+    void onUpgrade(UpgradeProtocol protocol) noexcept override {}
 
     void requestComplete() noexcept override {
         delete this;
@@ -244,7 +243,7 @@ public:
 
     RequestHandler* onRequest(RequestHandler*, HTTPMessage* httpMessage) noexcept override {
 
-        if (httpMessage->getMethodString() == "POST") { // change to enum
+        if (httpMessage->getMethodString() == "POST") { // TODO: change to enum
 
             if (httpMessage->getPath() == "/feature-test")
                 return new FeatureTestHandler(eb_);
@@ -285,7 +284,7 @@ int main(int argc, char* argv[]) {
 
     LOG(INFO) << "Starting HTTP hello test server on port " << httpPort;
     server.start();
-    LOG(INFO) << "hellotest server exited";
+    LOG(INFO) << "hello test server exited";
 
     return 0;
 }
