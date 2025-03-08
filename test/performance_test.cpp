@@ -107,8 +107,9 @@ folly::Future<folly::Unit> PerformanceTest::sendRequests() {
 //
 folly::Future<folly::Unit> PerformanceTest::connect(int index, int retries) {
 
-    // TODO: Make retries a test parameter
-    static constexpr int max_retries = 200;
+    // TODO: Make max consecutive retries a test parameter
+
+    static constexpr int max_retries = 3;
 
     if (retries >= max_retries) {
         auto msg = fmt::format("Connect to '{}:{}' failed  Exceeded max retries: {}",
@@ -123,7 +124,7 @@ folly::Future<folly::Unit> PerformanceTest::connect(int index, int retries) {
 
     return client->connect(target_host, target_port)
         .thenValue([this, index, retries](folly::Unit) {
-            return connect(index+1, retries);
+            return connect(index+1, 0);
         })
         .thenError(folly::tag_t<std::exception>{},
             [this, index, retries](const std::exception& e) mutable {
