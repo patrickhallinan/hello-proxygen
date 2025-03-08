@@ -114,9 +114,10 @@ public:
                                                 params->host,
                                                 params->port);
             ft_->run()
-               .thenValue([this](std::string&& result) {
+               .thenValue([this](FeatureTestResult&& testResult) {
                    nlohmann::json response;
-                   response["result"] = result;
+                   response["result"] = testResult.result;
+                   response["msg"] = testResult.msg;
 
                    sendResponse(200, "OK", response.dump());
                });

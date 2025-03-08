@@ -117,7 +117,7 @@ proxygen::HTTPMessage HttpClient::createHttpMessage(proxygen::HTTPMethod method,
     }
 
     if (! httpMessage.getHeaders().getNumberOfValues(HTTP_HEADER_HOST)) {
-		const auto endpoint = fmt::format("{}:{}", host_, port_);
+                const auto endpoint = fmt::format("{}:{}", host_, port_);
         httpMessage.getHeaders().add(HTTP_HEADER_HOST, endpoint);
     }
 
@@ -156,7 +156,8 @@ void HttpClient::connectSuccess(HTTPUpstreamSession* session) {
 
 
 void HttpClient::connectError(const folly::AsyncSocketException& e) {
-    LOG(ERROR) << "Failed to connect to " << host_ << ":" << port_;
-    connectPromise_->setException(e);
+    auto msg = fmt::format("Unable to connect to {}:{}.  {}",
+                   host_, port_, e.what());
+    connectPromise_->setException(std::runtime_error{msg});
 }
 

@@ -24,7 +24,7 @@ FeatureTest::FeatureTest(folly::EventBase& eventBase, const std::string& host, u
 }
 
 
-folly::Future<std::string> FeatureTest::run() {
+folly::Future<FeatureTestResult> FeatureTest::run() {
 
     eventBase_.runInEventBaseThread([this]() {
 
@@ -66,13 +66,17 @@ folly::Future<std::string> FeatureTest::run() {
                               failMsg_ = e.what();
                           })
                           .thenValue([this](folly::Unit) {
+                              FeatureTestResult testResult;
+
                               if (passed_) {
-                                  completed_.setValue("PASSED");
+                                  testResult.result = "PASSED";
                               }
                               else {
-                                  auto msg = fmt::format("FAILED: {}", failMsg_);
-                                  completed_.setValue(msg);
+                                  testResult.result = "FAILED";
+                                  testResult.msg = failMsg_;
                               }
+
+                              completed_.setValue(testResult);
                           });
     });
 

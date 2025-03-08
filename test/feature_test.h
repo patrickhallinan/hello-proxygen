@@ -10,20 +10,26 @@ class EventBase;
 }
 
 
+struct FeatureTestResult {
+    std::string result;
+    std::string msg;
+};
+
+
 class FeatureTest {
 public:
     FeatureTest(folly::EventBase& eventBase,
                 const std::string& host,
                 uint16_t port);
 
-    folly::Future<std::string> run();
+    folly::Future<FeatureTestResult> run();
 
 private:
     folly::EventBase& eventBase_;
     std::string host_;
     uint16_t port_;
 
-    folly::Promise<std::string> completed_;
+    folly::Promise<FeatureTestResult> completed_;
     std::unique_ptr<HttpClient> httpClient_;
     std::string failMsg_;
     bool passed_{true};

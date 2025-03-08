@@ -19,8 +19,8 @@ int main(int argc, char* argv[]) {
     FeatureTest test(eventBase, FLAGS_hello_host, FLAGS_hello_port);
 
     test.run()
-        .thenValue([&eventBase](std::string&& result) {
-            LOG(INFO) << result;
+        .thenValue([&eventBase](FeatureTestResult&& result) {
+            LOG(INFO) << result.result << "  " << result.msg;
             eventBase.terminateLoopSoon();
         });
 
