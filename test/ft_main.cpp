@@ -24,7 +24,7 @@ int main(int argc, char* argv[]) {
             eventBase.terminateLoopSoon();
         });
 
-    // this drives the test and everything runs in this thread
+    // This drives everything.  All events run in this thread.
     eventBase.loop();
 
     LOG(INFO) << "Exit main()\n";
