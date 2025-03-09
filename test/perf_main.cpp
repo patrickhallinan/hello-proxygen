@@ -20,11 +20,11 @@ int main(int argc, char* argv[]) {
 
     folly::EventBase eventBase;
 
-    PerformanceTestParams params{ .target_host=FLAGS_target_host,
-                                  .target_port=(uint16_t)FLAGS_target_port,
-                                  .number_of_connections=FLAGS_num_connections,
-                                  .number_of_requests=FLAGS_number_of_requests,
-                                  .payload_size=FLAGS_payload_size };
+    PerformanceTestParams params{ .target_host            =FLAGS_target_host,
+                                  .target_port  =(uint16_t)FLAGS_target_port,
+                                  .number_of_connections = FLAGS_num_connections,
+                                  .number_of_requests    = FLAGS_number_of_requests,
+                                  .payload_size          = FLAGS_payload_size };
 
     PerformanceTest test{&eventBase, params};
 
