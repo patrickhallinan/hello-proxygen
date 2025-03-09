@@ -71,7 +71,7 @@ It built fine on a chromebook having 8 GB of memory with the number of jobs set 
 
 ### for rtags support on ubuntu
 
-In order to use `rtags` on `proxygen` itself you must build with `clang` and generate `compile_commands.json`.
+In order to use `rtags` on `proxygen` source (.cpp files) you must build with `clang` and generate `compile_commands.json`.
 
 #### install `bear`
 
