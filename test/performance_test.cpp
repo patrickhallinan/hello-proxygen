@@ -61,13 +61,13 @@ folly::Future<HttpClient*> PerformanceTest::send(HttpClient* client) {
             }
 
             else if (response.content() != payload_) {
-                auto truncate = [](std::string_view s, size_t N) {
-                    return s.substr(0, std::min(s.length(), N));
-                };
+                auto content = response.content().size() < 200
+                             ? response.content()
+                             : response.content().substr(0, 200) + "...";
 
-                auto msg = fmt::format("invalid response from host. expected size={} "
+                auto msg = fmt::format("Invalid response from host. expected size={} "
                         ", actual size={}, content:\n{}", payload_.size(),
-                        response.content().size(), truncate(response.content(), 200));
+                        response.content().size(), content);
 
                 throw std::runtime_error(msg);
             }
@@ -91,7 +91,15 @@ folly::Future<folly::Unit> PerformanceTest::sendRequests() {
 
     return folly::collectAll(std::move(clientFutures))
         .via(eventBase_)
-        .thenValue([](folly::SemiFuture<std::vector<folly::Try<HttpClient *>>>) {
+        .thenValue([](const std::vector<folly::Try<HttpClient *>>&& results) {
+
+            for (const auto& result : results) {
+                if (result.hasException()) {
+                    auto msg = result.exception().what();
+                    throw std::runtime_error{msg.toStdString()};
+                }
+            }
+
             return folly::unit;
         });
 }
@@ -111,11 +119,6 @@ folly::Future<folly::Unit> PerformanceTest::connect(int index, int retries) {
 
     static constexpr int max_retries = 3;
 
-    if (retries >= max_retries) {
-        auto msg = fmt::format("Connect to '{}:{}' failed  Exceeded max retries: {}",
-            target_host, target_port, max_retries);
-        throw std::runtime_error{msg};
-    }
 
     if (index >= clients_.size())
         return folly::unit;
@@ -131,7 +134,15 @@ folly::Future<folly::Unit> PerformanceTest::connect(int index, int retries) {
 
             LOG(ERROR) << e.what();
 
-            return connect(index, retries+1);
+            if (retries < max_retries) {
+                return connect(index, retries+1);
+            }
+            else {
+                auto msg = fmt::format("connect() exceeded max retries: {}, {}",
+                    max_retries, e.what());
+
+                throw std::runtime_error{msg};
+            }
         });
 }
 
@@ -203,7 +214,6 @@ folly::Future<std::vector<std::string>> PerformanceTest::run() {
             auto start = std::chrono::high_resolution_clock::now();
 
             return sendRequests()
-
                 .thenValue([this, promise, start](folly::Unit) {
 
                     auto end = std::chrono::high_resolution_clock::now();
@@ -216,7 +226,15 @@ folly::Future<std::vector<std::string>> PerformanceTest::run() {
 
                     for (auto& client : clients_)
                         delete client;
+                })
+                .thenError(folly::tag_t<std::exception>{},
+                    [promise](const std::exception&& e) {
+
+                    promise->setException(std::runtime_error{e.what()});
                 });
+        })
+        .thenError(folly::tag_t<std::exception>{},[promise](const std::exception&& e) {
+            promise->setException(std::runtime_error{e.what()});
         });
 
     return promise->getFuture();

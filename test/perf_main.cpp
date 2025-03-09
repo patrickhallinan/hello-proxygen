@@ -29,13 +29,19 @@ int main(int argc, char* argv[]) {
     PerformanceTest test{&eventBase, params};
 
     test.run()
-        .thenValue([&eventBase](std::vector<std::string>&& lines) {
+        .thenValue([](std::vector<std::string>&& lines) {
 
             for (const auto& line : lines)
                 LOG(INFO) << line;
+        })
+        .thenError(folly::tag_t<std::exception>{}, [](const std::exception&& e) {
 
+            LOG(ERROR) << e.what();
+        })
+        .ensure([&eventBase]() {
             eventBase.terminateLoopSoon();
         });
+
 
     eventBase.loop();
 

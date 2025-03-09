@@ -164,6 +164,12 @@ public:
                 .thenValue([this](std::vector<std::string>&& lines) {
 
                     sendResponse(200, "OK", folly::join("\n", lines));
+                })
+                .thenError(folly::tag_t<std::exception>{},
+                    [this](const std::exception&& e) {
+
+                    LOG(ERROR) << e.what();
+                    sendResponse(200, "OK", e.what());
                 });
         }
     }
