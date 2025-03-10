@@ -117,7 +117,7 @@ folly::Future<folly::Unit> PerformanceTest::connect(int index, int retries) {
 
     // TODO: Make max consecutive retries a test parameter
 
-    static constexpr int max_retries = 3;
+    static constexpr int max_retries = 2;
 
 
     if (index >= clients_.size())
