@@ -6,7 +6,7 @@ Tested on macOS Sonoma (14.7.1), ubuntu 24.04 (on Windows 11 in a VM and in WSL)
 
 ## Overview
 
-`hello-proxygen` is a minimal HTTP server built with proxygen, Facebook's event-driven HTTP framework. It supports GET and POST requests, includes feature and performance tests, and serves as a starting point for exploring Proxygen's capabilities. The server responds to requests at `http://localhost:8080` and includes a test server for automated testing.
+`hello-proxygen` is a minimal HTTP server built with proxygen, Facebook's event-driven HTTP framework. It supports GET and POST requests, includes feature and performance tests, and serves as a starting point for exploring Proxygen's capabilities. By default, the server responds to requests at `http://localhost:8080` and includes a test server for automated testing.
 
 ## Documentation
 
