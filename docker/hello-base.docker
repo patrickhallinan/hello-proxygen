@@ -4,7 +4,7 @@ ARG BUILD_JOBS=8
 
 RUN apt-get update
 RUN apt-get install -y gcc g++ gdb
-RUN apt-get install -y clang libfast-float-dev
+RUN apt-get install -y clang cmake libfast-float-dev nlohmann-json3-dev
 RUN apt-get install -y sudo git tmux vim
 RUN apt-get install -y openssh-server
 RUN apt-get clean
