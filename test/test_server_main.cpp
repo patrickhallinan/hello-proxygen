@@ -132,7 +132,7 @@ public:
             FeatureTestParams p;
 
             setFromConfig(TestHandler::config(json),
-                          "host", &p.host, "localhost",
+                          "host", &p.host, "127.0.0.1",
                           "port", &p.port, 8080);
             return p;
         } catch(const nlohmann::json::exception& e) {
@@ -182,7 +182,7 @@ public:
             PerformanceTestParams p;
 
             setFromConfig(TestHandler::config(json),
-                "host", &p.target_host, "localhost",
+                "host", &p.target_host, "127.0.0.1",
                 "port", &p.target_port, 8080,
                 "num_connections",    &p.number_of_connections, 16,
                 "number_of_requests", &p.number_of_requests, 100,
