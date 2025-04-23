@@ -1,4 +1,4 @@
-FROM hello-base:latest
+FROM hello:latest
 
 USER ubuntu
 

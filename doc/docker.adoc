@@ -4,9 +4,9 @@ Run `hello-proxygen` in a docker container.
 
 There are two images:
 
-* `hello-base` : Based on `ubuntu-24.04`. Checks out and builds `proxygen` and `hello-proxygen`. Runs `sshd` for CMD[]
+* `hello` : Based on `ubuntu-24.04`. Checks out and builds `proxygen` and `hello-proxygen`. Runs `sshd` for CMD[]
     ** This would need to be rebuilt for a new proxygen version.
-* `hello` : Based on `hello-base`. Pulls and builds latest `hello-proxygen`. At runtime executes `sshd` and `hello`
+* `hello-ci` : Based on `hello`. Pulls and builds latest `hello-proxygen`. At runtime executes `sshd`, `hello`, and `test`
 
 
 == to run docker as non-root user
@@ -28,35 +28,35 @@ NOTE: Failed to build proxygen in docker on old hardware.
 
 === docker build
 
-==== build hello-base
+==== build hello
 ```
-docker build . -t hello-base:latest -f hello-base.docker
+docker build . -t hello:latest -f hello.docker
 ```
 
 low memory:
 
 ```
-docker build . -t hello-base:latest -f hello-base.docker --build-arg BUILD_JOBS=1
+docker build . -t hello:latest -f hello.docker --build-arg BUILD_JOBS=1
 ```
 
-==== build hello
+==== build hello-ci
 
 ```
-docker build . -t hello:latest -f hello.docker
+docker build . -t hello-ci:latest -f hello-ci.docker
 ```
 
 === docker buildx
-
-==== build hello-base
-
-```
-docker buildx build -f hello-base.docker  -t hello-base:latest --load .
-```
 
 ==== build hello
 
 ```
 docker buildx build -f hello.docker  -t hello:latest --load .
+```
+
+==== build hello-ci
+
+```
+docker buildx build -f hello-ci.docker  -t hello-ci:latest --load .
 ```
 
 
@@ -68,16 +68,16 @@ Port 3000 can be any available port.
 docker run -ti -p 3000:22 <image-id or tag>
 ```
 
-=== hello-base image
-
-```
-docker run -ti -p 3000:22 hello-base:latest
-```
-
 === hello image
 
 ```
-sudo docker run -ti -p 3000:22 -p 8080:8080 hello:latest
+docker run -ti -p 3000:22 hello:latest
+```
+
+=== hello-ci image
+
+```
+docker run -ti -p 3000:22 -p 8080:8080 -p 8000:8000 hello-ci:latest
 ```
 
 
